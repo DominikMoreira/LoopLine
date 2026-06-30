@@ -6,14 +6,26 @@
 	objectVersion = 90;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		ADE282852FF4714700663957 /* AGENTS.md in Resources */ = {isa = PBXBuildFile; fileRef = ADE282832FF4714200663957 /* AGENTS.md */; };
+		ADE282882FF4715700663957 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = ADE282862FF4715000663957 /* README.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* LoopLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LoopLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADE282832FF4714200663957 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		ADE282862FF4715000663957 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		000000000000000000000010 /* LoopLine */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = LoopLine;
+			sourceTree = "<group>";
+		};
+		ADE282A62FF4722800663957 /* Docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Docs;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -30,6 +42,9 @@
 		000000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				ADE282832FF4714200663957 /* AGENTS.md */,
+				ADE282862FF4715000663957 /* README.md */,
+				ADE282A62FF4722800663957 /* Docs */,
 				000000000000000000000010 /* LoopLine */,
 				000000000000000000000020 /* Products */,
 			);
@@ -58,6 +73,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				000000000000000000000010 /* LoopLine */,
+				ADE282A62FF4722800663957 /* Docs */,
 			);
 			name = LoopLine;
 			productName = MyApp;
@@ -102,6 +118,7 @@
 		000000000000000140000000 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				ADE282852FF4714700663957 /* AGENTS.md in Resources */,
 			);
 		};
 /* End PBXResourcesBuildPhase section */
@@ -110,6 +127,7 @@
 		000000000000000120000000 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
+				ADE282882FF4715700663957 /* README.md in Sources */,
 			);
 		};
 /* End PBXSourcesBuildPhase section */
