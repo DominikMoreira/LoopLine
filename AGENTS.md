@@ -1,7 +1,48 @@
 # AGENTS.md
+## Git workflow for agents
+Agents must never work directly on `main`.
+Before making any code changes:
+1. Confirm the current branch is **not** `main`.
+2. If the repo is on `main`, stop and ask for a feature branch to be created and checked out first.
+3. All implementation work must happen on a dedicated branch.
+
+### Branch rules
+- Use feature branches for development work.
+- Use clear branch names such as:
+  - `feature/project-list`
+  - `feature/swiftdata-setup`
+  - `feature/reading-mode-shell`
+  - `docs/readme-and-agents`
+- Prefer hyphenated, descriptive names.
+
+### Agent behavior
+- Do not create or modify code on `main`.
+- Do not merge branches.
+- Do not delete branches.
+- Do not rewrite Git history unless explicitly asked.
+- Keep commits scoped to the task at hand.
+- If branch state is unclear, stop and ask.
+
+### Expected human workflow
+The human should usually do this before starting the agent:
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/<task-name>
+```
+
+Then the agent may work on that checked-out feature branch.
+
+### Suggested check
+Before starting implementation, verify:
+
+```bash
+git branch --show-current
+```
+
+If the result is `main`, do not proceed.
 
 ## Project overview
-
 This repository contains a simple SwiftUI iOS app for knitting project tracking.
 
 The first release is intentionally small and focused on:
