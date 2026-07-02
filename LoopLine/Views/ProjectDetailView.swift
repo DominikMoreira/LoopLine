@@ -20,6 +20,7 @@ struct ProjectDetailView: View {
         List {
             headerSection
             metadataSection
+            readingSection
             trackingSection
             statsSection
             notesSection
@@ -59,6 +60,14 @@ struct ProjectDetailView: View {
     private var metadataSection: some View {
         Section("Metadata") {
             DetailRow(label: "Source Type", value: project.sourceType.displayName)
+        }
+    }
+
+    private var readingSection: some View {
+        Section {
+            NavigationLink("Open Reading Mode") {
+                ReadingModeView(project: project)
+            }
         }
     }
 
