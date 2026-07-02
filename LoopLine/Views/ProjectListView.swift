@@ -4,6 +4,7 @@ import SwiftUI
 struct ProjectListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Project.name) private var projects: [Project]
+    @State private var isShowingCreateProject = false
 
     var body: some View {
         NavigationStack {
@@ -16,7 +17,15 @@ struct ProjectListView: View {
             }
             .navigationTitle("Projects")
             .toolbar {
-                Button("Add Sample", action: addSampleProject)
+                Button("Add Project") {
+                    isShowingCreateProject = true
+                }
+            }
+            .sheet(isPresented: $isShowingCreateProject) {
+                CreateProjectView { draft in
+                    createProject(from: draft)
+                    isShowingCreateProject = false
+                }
             }
         }
     }
@@ -25,10 +34,12 @@ struct ProjectListView: View {
         ContentUnavailableView {
             Label("No Projects Yet", systemImage: "tray")
         } description: {
-            Text("Add a sample project to check the app foundation.")
+            Text("Create your first knitting project to start tracking rows.")
         } actions: {
-            Button("Add Sample Project", action: addSampleProject)
-                .buttonStyle(.borderedProminent)
+            Button("Add Project") {
+                isShowingCreateProject = true
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 
@@ -52,23 +63,88 @@ struct ProjectListView: View {
         }
     }
 
-    private func addSampleProject() {
-        let sampleProject = Project(
-            name: "Sample Scarf",
-            subtitle: "Beginner garter stitch",
-            sourceType: .text,
+    private func createProject(from draft: NewProjectDraft) {
+        let trimmedName = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSubtitle = draft.subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedSourceText = draft.sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let project = Project(
+            name: trimmedName,
+            subtitle: trimmedSubtitle.isEmpty ? nil : trimmedSubtitle,
+            sourceType: draft.sourceType,
             currentRow: 1,
             repeatCurrent: 1,
-            repeatTotal: 4,
-            rows: [
-                "Cast on 24 stitches.",
-                "Knit every stitch across.",
-                "Turn and repeat until desired length."
-            ],
-            sourceText: "Cast on 24 stitches. Knit every stitch across."
+            repeatTotal: nil,
+            rows: draft.rows,
+            sourceText: draft.sourceType == .text && !trimmedSourceText.isEmpty ? trimmedSourceText : nil,
+            notes: []
         )
 
-        modelContext.insert(sampleProject)
+        modelContext.insert(project)
+    }
+}
+
+private struct NewProjectDraft {
+    var name = ""
+    var subtitle = ""
+    var sourceType: ImportSource = .text
+    var sourceText = ""
+    var rows: [String] = []
+
+    var isValid: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+private struct CreateProjectView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var draft = NewProjectDraft()
+
+    let onCreate: (NewProjectDraft) -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Project name", text: $draft.name)
+                    TextField("Subtitle", text: $draft.subtitle)
+
+                    Picker("Source Type", selection: $draft.sourceType) {
+                        ForEach(ImportSource.allCases, id: \.self) { sourceType in
+                            Text(label(for: sourceType))
+                                .tag(sourceType)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("New Project")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        onCreate(draft)
+                    }
+                    .disabled(!draft.isValid)
+                }
+            }
+        }
+    }
+
+    private func label(for sourceType: ImportSource) -> String {
+        switch sourceType {
+        case .pdf:
+            "PDF"
+        case .image:
+            "Image"
+        case .text:
+            "Text"
+        }
     }
 }
 
