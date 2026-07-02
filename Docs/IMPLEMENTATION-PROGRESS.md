@@ -9,12 +9,12 @@
 - [x] Empty project list
 - [x] Sample project insert
 - [x] Real create project flow
-
-## Current
 - [x] Project detail screen
 
+## Current
+- [x] Row and repeat controls
+
 ## Next
-- [ ] Row and repeat controls
 - [ ] Notes and reminders
 - [ ] Reading mode shell
 

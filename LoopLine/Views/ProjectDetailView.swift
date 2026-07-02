@@ -2,7 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct ProjectDetailView: View {
-    let project: Project
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var project: Project
 
     private var totalRows: Int {
         project.rows.count
@@ -18,6 +19,7 @@ struct ProjectDetailView: View {
         List {
             headerSection
             metadataSection
+            trackingSection
             statsSection
         }
         .navigationTitle(project.name)
@@ -47,15 +49,32 @@ struct ProjectDetailView: View {
         }
     }
 
+    private var trackingSection: some View {
+        Section("Tracking") {
+            CounterControlRow(
+                title: "Current Row",
+                value: String(project.currentRow),
+                detail: totalRows > 0 ? "of \(totalRows) rows" : nil,
+                canDecrease: project.currentRow > 1,
+                canIncrease: canIncreaseRow,
+                decreaseAction: decrementRow,
+                increaseAction: incrementRow
+            )
+
+            CounterControlRow(
+                title: "Repeat",
+                value: repeatDisplayText,
+                detail: nil,
+                canDecrease: project.repeatCurrent > 1,
+                canIncrease: canIncreaseRepeat,
+                decreaseAction: decrementRepeat,
+                increaseAction: incrementRepeat
+            )
+        }
+    }
+
     private var statsSection: some View {
         Section("Stats") {
-            DetailRow(label: "Current Row", value: String(project.currentRow))
-            DetailRow(label: "Repeat Current", value: String(project.repeatCurrent))
-
-            if let repeatTotal = project.repeatTotal {
-                DetailRow(label: "Repeat Total", value: String(repeatTotal))
-            }
-
             DetailRow(label: "Total Rows", value: String(totalRows))
 
             if let progress {
@@ -64,6 +83,51 @@ struct ProjectDetailView: View {
 
             DetailRow(label: "Notes", value: String(project.notes.count))
         }
+    }
+
+    private var repeatDisplayText: String {
+        if let repeatTotal = project.repeatTotal {
+            "\(project.repeatCurrent) / \(repeatTotal)"
+        } else {
+            String(project.repeatCurrent)
+        }
+    }
+
+    private var canIncreaseRow: Bool {
+        totalRows == 0 || project.currentRow < totalRows
+    }
+
+    private var canIncreaseRepeat: Bool {
+        guard let repeatTotal = project.repeatTotal else { return true }
+        return project.repeatCurrent < repeatTotal
+    }
+
+    private func incrementRow() {
+        guard canIncreaseRow else { return }
+        project.currentRow += 1
+        saveChanges()
+    }
+
+    private func decrementRow() {
+        guard project.currentRow > 1 else { return }
+        project.currentRow -= 1
+        saveChanges()
+    }
+
+    private func incrementRepeat() {
+        guard canIncreaseRepeat else { return }
+        project.repeatCurrent += 1
+        saveChanges()
+    }
+
+    private func decrementRepeat() {
+        guard project.repeatCurrent > 1 else { return }
+        project.repeatCurrent -= 1
+        saveChanges()
+    }
+
+    private func saveChanges() {
+        try? modelContext.save()
     }
 }
 
@@ -79,6 +143,55 @@ private struct DetailRow: View {
             Text(value)
                 .multilineTextAlignment(.trailing)
         }
+    }
+}
+
+private struct CounterControlRow: View {
+    let title: String
+    let value: String
+    let detail: String?
+    let canDecrease: Bool
+    let canIncrease: Bool
+    let decreaseAction: () -> Void
+    let increaseAction: () -> Void
+
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                if let detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Button(action: decreaseAction) {
+                Image(systemName: "minus.circle")
+                    .imageScale(.large)
+            }
+            .buttonStyle(.borderless)
+            .disabled(!canDecrease)
+            .accessibilityLabel("Decrease \(title)")
+
+            Text(value)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .monospacedDigit()
+                .frame(minWidth: 44)
+
+            Button(action: increaseAction) {
+                Image(systemName: "plus.circle")
+                    .imageScale(.large)
+            }
+            .buttonStyle(.borderless)
+            .disabled(!canIncrease)
+            .accessibilityLabel("Increase \(title)")
+        }
+        .padding(.vertical, 4)
     }
 }
 
