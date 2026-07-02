@@ -10,13 +10,14 @@
 - [x] Sample project insert
 - [x] Real create project flow
 - [x] Project detail screen
+- [x] Row and repeat controls
+- [x] Notes and reminders
+- [x] Reading mode shell
 
 ## Current
-- [x] Row and repeat controls
-
+- [x] Sample Pattern
 ## Next
-- [ ] Notes and reminders
-- [ ] Reading mode shell
+- [x] 
 
 ## Later
 - [ ] PDF import
