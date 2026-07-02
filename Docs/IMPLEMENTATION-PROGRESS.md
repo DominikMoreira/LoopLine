@@ -13,9 +13,10 @@
 - [x] Row and repeat controls
 - [x] Notes and reminders
 - [x] Reading mode shell
+- [x] Sample Pattern
 
 ## Current
-- [x] Sample Pattern
+- [x] Reading Guide improvements
 ## Next
 - [x] 
 

@@ -2,7 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct ReadingModeView: View {
-    let project: Project
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var project: Project
     @Query private var settings: [AppSettings]
 
     private var appSettings: AppSettings {
@@ -28,35 +29,50 @@ struct ReadingModeView: View {
         appSettings.readingDarkMode ? .black : .clear
     }
 
+    private var activeRowIndex: Int? {
+        guard !project.rows.isEmpty else { return nil }
+        return min(max(project.currentRow, 1), project.rows.count) - 1
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                if !project.rows.isEmpty {
-                    rowContent
-                } else if let trimmedSourceText {
-                    sourceTextContent(trimmedSourceText)
-                } else {
-                    emptyContent
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if !project.rows.isEmpty {
+                        rowContent
+                    } else if let trimmedSourceText {
+                        sourceTextContent(trimmedSourceText)
+                    } else {
+                        emptyContent
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
+            .background(backgroundStyle)
+            .navigationTitle(project.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                scrollToActiveRow(with: proxy)
+            }
+            .onChange(of: project.currentRow) { _, _ in
+                scrollToActiveRow(with: proxy)
+            }
         }
-        .background(backgroundStyle)
-        .navigationTitle(project.name)
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var rowContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(Array(project.rows.enumerated()), id: \.offset) { index, row in
-                HStack(alignment: .top, spacing: 10) {
-                    Text("\(index + 1).")
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                    Text(row)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                ReadingRow(
+                    rowNumber: index + 1,
+                    text: row,
+                    isActive: index == activeRowIndex,
+                    selectAction: {
+                        selectRow(at: index)
+                    }
+                )
+                .id(index)
             }
         }
         .font(readableFont)
@@ -80,6 +96,57 @@ struct ReadingModeView: View {
         )
         .frame(maxWidth: .infinity, minHeight: 240)
     }
+
+    private func selectRow(at index: Int) {
+        guard project.rows.indices.contains(index) else { return }
+        project.currentRow = index + 1
+        try? modelContext.save()
+    }
+
+    private func scrollToActiveRow(with proxy: ScrollViewProxy) {
+        guard let activeRowIndex else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            proxy.scrollTo(activeRowIndex, anchor: .center)
+        }
+    }
+}
+
+private struct ReadingRow: View {
+    let rowNumber: Int
+    let text: String
+    let isActive: Bool
+    let selectAction: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(rowNumber).")
+                .foregroundStyle(isActive ? .primary : .secondary)
+                .fontWeight(isActive ? .semibold : .regular)
+                .monospacedDigit()
+
+            Text(text)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background {
+            if isActive {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.accentColor.opacity(0.16))
+            }
+        }
+        .overlay {
+            if isActive {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.accentColor.opacity(0.45), lineWidth: 1)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: selectAction)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Sets this as the current row")
+    }
 }
 
 #Preview("Rows") {
@@ -87,6 +154,7 @@ struct ReadingModeView: View {
         ReadingModeView(project: Project(
             name: "Sample Scarf",
             sourceType: .text,
+            currentRow: 2,
             rows: [
                 "Cast on 24 stitches.",
                 "Knit every stitch across the row.",
