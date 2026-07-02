@@ -45,21 +45,25 @@ struct ProjectListView: View {
 
     private var projectList: some View {
         List(projects) { project in
-            VStack(alignment: .leading, spacing: 4) {
-                Text(project.name)
-                    .font(.headline)
+            NavigationLink {
+                ProjectDetailView(project: project)
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(project.name)
+                        .font(.headline)
 
-                if let subtitle = project.subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.subheadline)
+                    if let subtitle = project.subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("Current row: \(project.currentRow)")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
-                Text("Current row: \(project.currentRow)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
         }
     }
 
@@ -111,7 +115,7 @@ private struct CreateProjectView: View {
 
                     Picker("Source Type", selection: $draft.sourceType) {
                         ForEach(ImportSource.allCases, id: \.self) { sourceType in
-                            Text(label(for: sourceType))
+                            Text(sourceType.displayName)
                                 .tag(sourceType)
                         }
                     }
@@ -136,16 +140,6 @@ private struct CreateProjectView: View {
         }
     }
 
-    private func label(for sourceType: ImportSource) -> String {
-        switch sourceType {
-        case .pdf:
-            "PDF"
-        case .image:
-            "Image"
-        case .text:
-            "Text"
-        }
-    }
 }
 
 #Preview("Empty") {

@@ -8,12 +8,12 @@
 - [x] SwiftData foundation
 - [x] Empty project list
 - [x] Sample project insert
+- [x] Real create project flow
 
 ## Current
-- [ ] Real create project flow
+- [x] Project detail screen
 
 ## Next
-- [ ] Project detail screen
 - [ ] Row and repeat controls
 - [ ] Notes and reminders
 - [ ] Reading mode shell
