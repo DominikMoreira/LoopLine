@@ -16,7 +16,7 @@ final class Project {
     var sourceFilePath: String?
     var coverImagePath: String?
 
-    @Relationship(deleteRule: .cascade)
+    @Relationship(deleteRule: .cascade, inverse: \ProjectNote.project)
     var notes: [ProjectNote]
 
     init(

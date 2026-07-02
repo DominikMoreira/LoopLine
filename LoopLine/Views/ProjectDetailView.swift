@@ -4,6 +4,7 @@ import SwiftUI
 struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
+    @State private var isShowingAddNote = false
 
     private var totalRows: Int {
         project.rows.count
@@ -21,9 +22,21 @@ struct ProjectDetailView: View {
             metadataSection
             trackingSection
             statsSection
+            notesSection
         }
         .navigationTitle(project.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            Button("Add Note") {
+                isShowingAddNote = true
+            }
+        }
+        .sheet(isPresented: $isShowingAddNote) {
+            AddNoteView { draft in
+                addNote(from: draft)
+                isShowingAddNote = false
+            }
+        }
     }
 
     private var headerSection: some View {
@@ -85,6 +98,19 @@ struct ProjectDetailView: View {
         }
     }
 
+    private var notesSection: some View {
+        Section("Notes") {
+            if project.notes.isEmpty {
+                Text("No notes yet")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(project.notes) { note in
+                    NoteRow(note: note)
+                }
+            }
+        }
+    }
+
     private var repeatDisplayText: String {
         if let repeatTotal = project.repeatTotal {
             "\(project.repeatCurrent) / \(repeatTotal)"
@@ -126,8 +152,98 @@ struct ProjectDetailView: View {
         saveChanges()
     }
 
+    private func addNote(from draft: NoteDraft) {
+        let note = ProjectNote(
+            text: draft.trimmedText,
+            rowNumber: draft.rowNumber
+        )
+
+        modelContext.insert(note)
+        project.notes.append(note)
+        saveChanges()
+    }
+
     private func saveChanges() {
         try? modelContext.save()
+    }
+}
+
+private struct NoteDraft {
+    var text = ""
+    var rowNumberText = ""
+
+    var trimmedText: String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var rowNumber: Int? {
+        let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedRow.isEmpty, let rowNumber = Int(trimmedRow), rowNumber > 0 else {
+            return nil
+        }
+        return rowNumber
+    }
+
+    var isValid: Bool {
+        !trimmedText.isEmpty && hasValidRowNumber
+    }
+
+    private var hasValidRowNumber: Bool {
+        let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedRow.isEmpty || rowNumber != nil
+    }
+}
+
+private struct AddNoteView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var draft = NoteDraft()
+
+    let onSave: (NoteDraft) -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Note text", text: $draft.text, axis: .vertical)
+                        .lineLimit(3...6)
+                    TextField("Row number", text: $draft.rowNumberText)
+                        .keyboardType(.numberPad)
+                }
+            }
+            .navigationTitle("Add Note")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(draft)
+                    }
+                    .disabled(!draft.isValid)
+                }
+            }
+        }
+    }
+}
+
+private struct NoteRow: View {
+    let note: ProjectNote
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(note.text)
+
+            if let rowNumber = note.rowNumber {
+                Text("Row \(rowNumber)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
     }
 }
 
