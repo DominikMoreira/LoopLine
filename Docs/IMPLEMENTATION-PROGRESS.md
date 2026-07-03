@@ -8,15 +8,17 @@
 - [x] SwiftData foundation
 - [x] Empty project list
 - [x] Sample project insert
+- [x] Real create project flow
+- [x] Project detail screen
+- [x] Row and repeat controls
+- [x] Notes and reminders
+- [x] Reading mode shell
+- [x] Sample Pattern
 
 ## Current
-- [ ] Real create project flow
-
+- [x] Reading Guide improvements
 ## Next
-- [ ] Project detail screen
-- [ ] Row and repeat controls
-- [ ] Notes and reminders
-- [ ] Reading mode shell
+- [x] 
 
 ## Later
 - [ ] PDF import
