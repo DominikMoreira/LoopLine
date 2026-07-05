@@ -3,8 +3,10 @@ import SwiftUI
 
 struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Bindable var project: Project
     @State private var isShowingAddNote = false
+    @State private var isShowingDeleteConfirmation = false
 
     private var totalRows: Int {
         project.rows.count
@@ -27,6 +29,7 @@ struct ProjectDetailView: View {
             trackingSection
             statsSection
             notesSection
+            deleteSection
         }
         .navigationTitle(project.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -40,6 +43,14 @@ struct ProjectDetailView: View {
                 addNote(from: draft)
                 isShowingAddNote = false
             }
+        }
+        .alert("Delete Project?", isPresented: $isShowingDeleteConfirmation) {
+            Button("Delete Project", role: .destructive) {
+                deleteProject()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will permanently delete \(project.name) and its notes. This cannot be undone.")
         }
     }
 
@@ -136,6 +147,14 @@ struct ProjectDetailView: View {
         }
     }
 
+    private var deleteSection: some View {
+        Section {
+            Button("Delete Project", role: .destructive) {
+                isShowingDeleteConfirmation = true
+            }
+        }
+    }
+
     private var repeatDisplayText: String {
         if let repeatTotal = project.repeatTotal {
             "\(project.repeatCurrent) / \(repeatTotal)"
@@ -186,6 +205,12 @@ struct ProjectDetailView: View {
         modelContext.insert(note)
         project.notes.append(note)
         saveChanges()
+    }
+
+    private func deleteProject() {
+        modelContext.delete(project)
+        saveChanges()
+        dismiss()
     }
 
     #if DEBUG

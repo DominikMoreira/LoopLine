@@ -5,6 +5,7 @@ struct ProjectListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Project.name) private var projects: [Project]
     @State private var isShowingCreateProject = false
+    @State private var projectPendingDeletion: Project?
 
     var body: some View {
         NavigationStack {
@@ -27,6 +28,16 @@ struct ProjectListView: View {
                     isShowingCreateProject = false
                 }
             }
+            .alert("Delete Project?", isPresented: deleteConfirmationBinding) {
+                Button("Delete Project", role: .destructive) {
+                    confirmProjectDeletion()
+                }
+                Button("Cancel", role: .cancel) {
+                    projectPendingDeletion = nil
+                }
+            } message: {
+                Text(deleteConfirmationMessage)
+            }
         }
     }
 
@@ -41,6 +52,25 @@ struct ProjectListView: View {
             }
             .buttonStyle(.borderedProminent)
         }
+    }
+
+    private var deleteConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { projectPendingDeletion != nil },
+            set: { isPresented in
+                if !isPresented {
+                    projectPendingDeletion = nil
+                }
+            }
+        )
+    }
+
+    private var deleteConfirmationMessage: String {
+        guard let projectPendingDeletion else {
+            return "This will permanently delete this project and its notes. This cannot be undone."
+        }
+
+        return "This will permanently delete \(projectPendingDeletion.name) and its notes. This cannot be undone."
     }
 
     private var projectList: some View {
@@ -64,6 +94,11 @@ struct ProjectListView: View {
                 }
                 .padding(.vertical, 4)
             }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button("Delete Project", role: .destructive) {
+                    projectPendingDeletion = project
+                }
+            }
         }
     }
 
@@ -85,6 +120,17 @@ struct ProjectListView: View {
         )
 
         modelContext.insert(project)
+    }
+
+    private func confirmProjectDeletion() {
+        guard let project = projectPendingDeletion else { return }
+        projectPendingDeletion = nil
+        deleteProject(project)
+    }
+
+    private func deleteProject(_ project: Project) {
+        modelContext.delete(project)
+        try? modelContext.save()
     }
 }
 

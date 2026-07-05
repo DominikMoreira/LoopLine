@@ -11,14 +11,15 @@
 - [x] Real create project flow
 - [x] Project detail screen
 - [x] Row and repeat controls
-- [x] Notes and reminders
+- [x] 
 - [x] Reading mode shell
 - [x] Sample Pattern
 
 ## Current
 - [x] Reading Guide improvements
 ## Next
-- [x] 
+- [x] Notes and reminders
+  - [ ] Partly done, reminder still missing 
 
 ## Later
 - [ ] PDF import
