@@ -7,6 +7,7 @@ struct ProjectDetailView: View {
     @Bindable var project: Project
     @State private var isShowingAddNote = false
     @State private var isShowingDeleteConfirmation = false
+    @State private var isShowingEditProject = false
 
     private var totalRows: Int {
         project.rows.count
@@ -34,6 +35,10 @@ struct ProjectDetailView: View {
         .navigationTitle(project.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            Button("Edit") {
+                isShowingEditProject = true
+            }
+
             Button("Add Note") {
                 isShowingAddNote = true
             }
@@ -51,6 +56,9 @@ struct ProjectDetailView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This will permanently delete \(project.name) and its notes. This cannot be undone.")
+        }
+        .sheet(isPresented: $isShowingEditProject) {
+            EditProjectView(project: project)
         }
     }
 
@@ -278,6 +286,99 @@ private struct NoteDraft {
     }
 }
 
+private struct EditProjectDraft {
+    var name: String
+    var subtitle: String
+    var sourceType: ImportSource
+
+    init(project: Project) {
+        name = project.name
+        subtitle = project.subtitle ?? ""
+        sourceType = project.sourceType
+    }
+
+    var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedSubtitle: String {
+        subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var isValid: Bool {
+        !trimmedName.isEmpty
+    }
+}
+
+private struct EditProjectView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var project: Project
+    @State private var draft: EditProjectDraft
+
+    init(project: Project) {
+        self.project = project
+        _draft = State(initialValue: EditProjectDraft(project: project))
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Project name", text: $draft.name)
+                    TextField("Subtitle", text: $draft.subtitle)
+
+                    Picker("Source Type", selection: $draft.sourceType) {
+                        ForEach(ImportSource.allCases, id: \.self) { sourceType in
+                            Text(sourceType.displayName)
+                                .tag(sourceType)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Edit Project")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveProject()
+                    }
+                    .disabled(!draft.isValid)
+                }
+            }
+        }
+    }
+
+    private func saveProject() {
+        project.name = draft.trimmedName
+        project.subtitle = draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle
+        project.sourceType = draft.sourceType
+        clearStaleSourceFields()
+        try? modelContext.save()
+        dismiss()
+    }
+
+    private func clearStaleSourceFields() {
+        if draft.sourceType != .text {
+            project.sourceText = nil
+        }
+
+        if draft.sourceType != .pdf {
+            project.sourceFilePath = nil
+        }
+
+        if draft.sourceType != .image {
+            project.coverImagePath = nil
+        }
+    }
+}
+
 private struct AddNoteView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft = NoteDraft()
@@ -411,4 +512,17 @@ private struct CounterControlRow: View {
         ))
     }
     .modelContainer(PreviewModelContainer.make())
+}
+
+#Preview("Edit Project") {
+    let container = PreviewModelContainer.make()
+    let project = Project(
+        name: "Sample Scarf",
+        subtitle: "Beginner garter stitch",
+        sourceType: .text
+    )
+    container.mainContext.insert(project)
+
+    return EditProjectView(project: project)
+        .modelContainer(container)
 }
