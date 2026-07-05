@@ -32,11 +32,6 @@ private struct SettingsForm: View {
 
     var body: some View {
         Form {
-            Section("App Appearance") {
-                Toggle("Dark Mode", isOn: $settings.readingDarkMode)
-                    .onChange(of: settings.readingDarkMode) { _, _ in saveSettings() }
-            }
-
             Section("Reading Mode") {
                 Toggle("Large Controls", isOn: $settings.largeControls)
                     .onChange(of: settings.largeControls) { _, _ in saveSettings() }

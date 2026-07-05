@@ -2,12 +2,6 @@ import SwiftData
 import SwiftUI
 
 struct ContentView: View {
-    @Query private var settings: [AppSettings]
-
-    private var preferredColorScheme: ColorScheme? {
-        settings.first?.readingDarkMode == true ? .dark : nil
-    }
-
     var body: some View {
         TabView {
             ProjectListView()
@@ -20,7 +14,6 @@ struct ContentView: View {
                     Label("Settings", systemImage: "gearshape")
                 }
         }
-        .preferredColorScheme(preferredColorScheme)
     }
 }
 

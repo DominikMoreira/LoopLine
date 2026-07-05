@@ -107,7 +107,6 @@ struct ProjectNote: Identifiable, Codable {
 }
 
 struct AppSettings: Codable {
-    var readingDarkMode: Bool
     var largeControls: Bool
     var guideOpacity: Double
 }
@@ -145,7 +144,6 @@ struct AppSettings: Codable {
 
 | Field | Type | Needed for | Notes |
 |---|---|---|---|
-| `readingDarkMode` | `Bool` | Reading mode appearance | Scoped to the reading experience |
 | `largeControls` | `Bool` | Reading mode controls | Supports one-handed use |
 | `guideOpacity` | `Double` | Reading mode guides | Best stored as a value from `0.0 ... 1.0` |
 
@@ -256,7 +254,6 @@ Required project data:
 
 Required settings data:
 
-- `readingDarkMode`
 - `largeControls`
 - `guideOpacity`
 

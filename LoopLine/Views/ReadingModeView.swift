@@ -21,14 +21,6 @@ struct ReadingModeView: View {
         appSettings.largeControls ? .title3 : .body
     }
 
-    private var foregroundStyle: Color {
-        appSettings.readingDarkMode ? .white : .primary
-    }
-
-    private var backgroundStyle: Color {
-        appSettings.readingDarkMode ? .black : .clear
-    }
-
     private var activeRowIndex: Int? {
         guard !project.rows.isEmpty else { return nil }
         return min(max(project.currentRow, 1), project.rows.count) - 1
@@ -49,7 +41,6 @@ struct ReadingModeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
             }
-            .background(backgroundStyle)
             .navigationTitle(project.name)
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
@@ -78,13 +69,11 @@ struct ReadingModeView: View {
             }
         }
         .font(readableFont)
-        .foregroundStyle(foregroundStyle)
     }
 
     private func sourceTextContent(_ sourceText: String) -> some View {
         Text(sourceText)
             .font(readableFont)
-            .foregroundStyle(foregroundStyle)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
