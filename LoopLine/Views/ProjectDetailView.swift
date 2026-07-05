@@ -359,8 +359,23 @@ private struct EditProjectView: View {
         project.name = draft.trimmedName
         project.subtitle = draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle
         project.sourceType = draft.sourceType
+        clearStaleSourceFields()
         try? modelContext.save()
         dismiss()
+    }
+
+    private func clearStaleSourceFields() {
+        if draft.sourceType != .text {
+            project.sourceText = nil
+        }
+
+        if draft.sourceType != .pdf {
+            project.sourceFilePath = nil
+        }
+
+        if draft.sourceType != .image {
+            project.coverImagePath = nil
+        }
     }
 }
 
