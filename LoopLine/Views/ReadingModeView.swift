@@ -21,14 +21,6 @@ struct ReadingModeView: View {
         appSettings.largeControls ? .title3 : .body
     }
 
-    private var foregroundStyle: Color {
-        appSettings.readingDarkMode ? .white : .primary
-    }
-
-    private var backgroundStyle: Color {
-        appSettings.readingDarkMode ? .black : .clear
-    }
-
     private var activeRowIndex: Int? {
         guard !project.rows.isEmpty else { return nil }
         return min(max(project.currentRow, 1), project.rows.count) - 1
@@ -49,7 +41,6 @@ struct ReadingModeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
             }
-            .background(backgroundStyle)
             .navigationTitle(project.name)
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
@@ -68,6 +59,8 @@ struct ReadingModeView: View {
                     rowNumber: index + 1,
                     text: row,
                     isActive: index == activeRowIndex,
+                    usesLargeControls: appSettings.largeControls,
+                    guideOpacity: appSettings.guideOpacity,
                     selectAction: {
                         selectRow(at: index)
                     }
@@ -76,13 +69,11 @@ struct ReadingModeView: View {
             }
         }
         .font(readableFont)
-        .foregroundStyle(foregroundStyle)
     }
 
     private func sourceTextContent(_ sourceText: String) -> some View {
         Text(sourceText)
             .font(readableFont)
-            .foregroundStyle(foregroundStyle)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
@@ -115,7 +106,17 @@ private struct ReadingRow: View {
     let rowNumber: Int
     let text: String
     let isActive: Bool
+    let usesLargeControls: Bool
+    let guideOpacity: Double
     let selectAction: () -> Void
+
+    private var verticalPadding: CGFloat {
+        usesLargeControls ? 14 : 8
+    }
+
+    private var horizontalPadding: CGFloat {
+        usesLargeControls ? 14 : 10
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -128,18 +129,18 @@ private struct ReadingRow: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 10)
+        .padding(.vertical, verticalPadding)
+        .padding(.horizontal, horizontalPadding)
         .background {
             if isActive {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.accentColor.opacity(0.16))
+                    .fill(Color.accentColor.opacity(0.16 * guideOpacity))
             }
         }
         .overlay {
             if isActive {
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.accentColor.opacity(0.45), lineWidth: 1)
+                    .stroke(Color.accentColor.opacity(0.45 * guideOpacity), lineWidth: 1)
             }
         }
         .contentShape(Rectangle())
