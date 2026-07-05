@@ -64,6 +64,11 @@ struct ProjectListView: View {
                 }
                 .padding(.vertical, 4)
             }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button("Delete", role: .destructive) {
+                    deleteProject(project)
+                }
+            }
         }
     }
 
@@ -85,6 +90,11 @@ struct ProjectListView: View {
         )
 
         modelContext.insert(project)
+    }
+
+    private func deleteProject(_ project: Project) {
+        modelContext.delete(project)
+        try? modelContext.save()
     }
 }
 
