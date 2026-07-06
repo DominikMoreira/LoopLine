@@ -89,18 +89,33 @@ struct ProjectDetailView: View {
     private var metadataSection: some View {
         Section("Metadata") {
             DetailRow(label: "Source Type", value: project.sourceType.displayName)
+
+            if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
+                DetailRow(label: "PDF", value: URL(fileURLWithPath: sourceFilePath).lastPathComponent)
+            }
         }
     }
 
     private var readingSection: some View {
         Section {
             NavigationLink("Open Reading Mode") {
-                ReadingModeView(project: project)
+                readingDestination
             }
 
-            Button("Import Pasted Text") {
-                isShowingTextImport = true
+            if project.sourceType != .pdf {
+                Button("Import Pasted Text") {
+                    isShowingTextImport = true
+                }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var readingDestination: some View {
+        if project.sourceType == .pdf {
+            PDFReadingView(project: project)
+        } else {
+            ReadingModeView(project: project)
         }
     }
 

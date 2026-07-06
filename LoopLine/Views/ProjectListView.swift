@@ -1,5 +1,7 @@
+import Foundation
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ProjectListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -114,8 +116,9 @@ struct ProjectListView: View {
             currentRow: 1,
             repeatCurrent: 1,
             repeatTotal: nil,
-            rows: draft.rows,
+            rows: draft.sourceType == .text ? draft.rows : [],
             sourceText: draft.sourceType == .text && !trimmedSourceText.isEmpty ? trimmedSourceText : nil,
+            sourceFilePath: draft.sourceType == .pdf ? draft.sourceFilePath : nil,
             notes: []
         )
 
@@ -139,6 +142,8 @@ private struct NewProjectDraft {
     var subtitle = ""
     var sourceType: ImportSource = .text
     var sourceText = ""
+    var sourceFilePath: String?
+    var sourceFileName: String?
     var rows: [String] = []
 
     var trimmedSourceText: String {
@@ -147,13 +152,28 @@ private struct NewProjectDraft {
 
     var isValid: Bool {
         let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let hasRequiredSource = sourceType != .text || !trimmedSourceText.isEmpty
         return hasName && hasRequiredSource
+    }
+
+    private var hasRequiredSource: Bool {
+        switch sourceType {
+        case .text:
+            !trimmedSourceText.isEmpty
+        case .pdf:
+            sourceFilePath != nil
+        case .image:
+            true
+        }
     }
 
     mutating func setPastedText(_ text: String) {
         sourceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         rows = Self.rows(from: sourceText)
+    }
+
+    mutating func setPDF(path: String, fileName: String) {
+        sourceFilePath = path
+        sourceFileName = fileName
     }
 
     private static func rows(from text: String) -> [String] {
@@ -167,6 +187,8 @@ private struct CreateProjectView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft = NewProjectDraft()
     @State private var isShowingTextImport = false
+    @State private var isShowingPDFImporter = false
+    @State private var pdfImportError: String?
 
     let onCreate: (NewProjectDraft) -> Void
 
@@ -202,6 +224,31 @@ private struct CreateProjectView: View {
                         }
                     }
                 }
+
+                if draft.sourceType == .pdf {
+                    Section("PDF") {
+                        Button(draft.sourceFileName == nil ? "Choose PDF" : "Choose Different PDF") {
+                            pdfImportError = nil
+                            isShowingPDFImporter = true
+                        }
+
+                        if let sourceFileName = draft.sourceFileName {
+                            Text(sourceFileName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("A PDF is required for PDF projects.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if let pdfImportError {
+                            Text(pdfImportError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
             }
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
@@ -225,8 +272,26 @@ private struct CreateProjectView: View {
                     isShowingTextImport = false
                 }
             }
+            .fileImporter(
+                isPresented: $isShowingPDFImporter,
+                allowedContentTypes: [.pdf]
+            ) { result in
+                importPDF(from: result)
+            }
         }
     }
+
+    private func importPDF(from result: Result<URL, Error>) {
+        do {
+            let sourceURL = try result.get()
+            let localURL = try ImportedPDFStorage.copyIntoStorage(from: sourceURL)
+            draft.setPDF(path: localURL.lastPathComponent, fileName: localURL.lastPathComponent)
+            pdfImportError = nil
+        } catch {
+            pdfImportError = "Could not import the selected PDF."
+        }
+    }
+
 
 }
 
