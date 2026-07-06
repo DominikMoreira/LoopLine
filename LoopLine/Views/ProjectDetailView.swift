@@ -8,6 +8,7 @@ struct ProjectDetailView: View {
     @State private var isShowingAddNote = false
     @State private var isShowingDeleteConfirmation = false
     @State private var isShowingEditProject = false
+    @State private var isShowingTextImport = false
 
     private var totalRows: Int {
         project.rows.count
@@ -60,6 +61,12 @@ struct ProjectDetailView: View {
         .sheet(isPresented: $isShowingEditProject) {
             EditProjectView(project: project)
         }
+        .sheet(isPresented: $isShowingTextImport) {
+            PastedTextImportView(initialText: project.sourceText ?? "") { text in
+                importPastedText(text)
+                isShowingTextImport = false
+            }
+        }
     }
 
     private var headerSection: some View {
@@ -89,6 +96,10 @@ struct ProjectDetailView: View {
         Section {
             NavigationLink("Open Reading Mode") {
                 ReadingModeView(project: project)
+            }
+
+            Button("Import Pasted Text") {
+                isShowingTextImport = true
             }
         }
     }
@@ -221,6 +232,23 @@ struct ProjectDetailView: View {
         dismiss()
     }
 
+    private func importPastedText(_ text: String) {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        project.sourceType = .text
+        project.sourceText = trimmedText
+        project.sourceFilePath = nil
+        project.coverImagePath = nil
+        project.rows = Self.rows(from: trimmedText)
+        project.currentRow = project.rows.isEmpty ? 1 : min(max(project.currentRow, 1), project.rows.count)
+        saveChanges()
+    }
+
+    private static func rows(from text: String) -> [String] {
+        text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
     #if DEBUG
     private func loadSamplePattern() {
         project.rows = Self.samplePatternRows
@@ -283,6 +311,54 @@ private struct NoteDraft {
     private var hasValidRowNumber: Bool {
         let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedRow.isEmpty || rowNumber != nil
+    }
+}
+
+private struct PastedTextImportView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+
+    let onImport: (String) -> Void
+
+    init(initialText: String, onImport: @escaping (String) -> Void) {
+        _text = State(initialValue: initialText)
+        self.onImport = onImport
+    }
+
+    private var trimmedText: String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canImport: Bool {
+        !trimmedText.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Pattern Text") {
+                    TextEditor(text: $text)
+                        .frame(minHeight: 240)
+                        .textInputAutocapitalization(.sentences)
+                }
+            }
+            .navigationTitle("Import Text")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Import") {
+                        onImport(trimmedText)
+                    }
+                    .disabled(!canImport)
+                }
+            }
+        }
     }
 }
 
@@ -525,4 +601,11 @@ private struct CounterControlRow: View {
 
     return EditProjectView(project: project)
         .modelContainer(container)
+}
+
+#Preview("Import Text") {
+    PastedTextImportView(
+        initialText: "Cast on 24 stitches.\nKnit every row until piece measures 48 inches.\nBind off loosely.",
+        onImport: { _ in }
+    )
 }
