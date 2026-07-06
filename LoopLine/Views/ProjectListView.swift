@@ -141,14 +141,32 @@ private struct NewProjectDraft {
     var sourceText = ""
     var rows: [String] = []
 
+    var trimmedSourceText: String {
+        sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let hasRequiredSource = sourceType != .text || !trimmedSourceText.isEmpty
+        return hasName && hasRequiredSource
+    }
+
+    mutating func setPastedText(_ text: String) {
+        sourceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        rows = Self.rows(from: sourceText)
+    }
+
+    private static func rows(from text: String) -> [String] {
+        text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
 
 private struct CreateProjectView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft = NewProjectDraft()
+    @State private var isShowingTextImport = false
 
     let onCreate: (NewProjectDraft) -> Void
 
@@ -163,6 +181,24 @@ private struct CreateProjectView: View {
                         ForEach(ImportSource.allCases, id: \.self) { sourceType in
                             Text(sourceType.displayName)
                                 .tag(sourceType)
+                        }
+                    }
+                }
+
+                if draft.sourceType == .text {
+                    Section("Pasted Text") {
+                        Button(draft.trimmedSourceText.isEmpty ? "Enter Pasted Text" : "Edit Pasted Text") {
+                            isShowingTextImport = true
+                        }
+
+                        if draft.rows.isEmpty {
+                            Text("Pattern text is required for pasted text projects.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("\(draft.rows.count) rows ready to import")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -181,6 +217,12 @@ private struct CreateProjectView: View {
                         onCreate(draft)
                     }
                     .disabled(!draft.isValid)
+                }
+            }
+            .sheet(isPresented: $isShowingTextImport) {
+                PastedTextImportView(initialText: draft.sourceText) { text in
+                    draft.setPastedText(text)
+                    isShowingTextImport = false
                 }
             }
         }

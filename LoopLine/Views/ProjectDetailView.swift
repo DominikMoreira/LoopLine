@@ -314,7 +314,7 @@ private struct NoteDraft {
     }
 }
 
-private struct PastedTextImportView: View {
+struct PastedTextImportView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var text: String
 
