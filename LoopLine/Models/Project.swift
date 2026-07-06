@@ -50,6 +50,14 @@ final class Project {
     }
 }
 
+enum PatternTextNormalizer {
+    static func rows(from text: String) -> [String] {
+        text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+}
+
 enum ImportedPDFStorage {
     static func directoryURL() throws -> URL {
         let applicationSupportDirectory = try FileManager.default.url(

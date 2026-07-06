@@ -253,16 +253,11 @@ struct ProjectDetailView: View {
         project.sourceText = trimmedText
         project.sourceFilePath = nil
         project.coverImagePath = nil
-        project.rows = Self.rows(from: trimmedText)
-        project.currentRow = project.rows.isEmpty ? 1 : min(max(project.currentRow, 1), project.rows.count)
+        project.rows = PatternTextNormalizer.rows(from: trimmedText)
+        project.currentRow = min(max(project.currentRow, 1), project.rows.count)
         saveChanges()
     }
 
-    private static func rows(from text: String) -> [String] {
-        text.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-    }
 
     #if DEBUG
     private func loadSamplePattern() {

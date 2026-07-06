@@ -168,7 +168,12 @@ private struct NewProjectDraft {
 
     mutating func setPastedText(_ text: String) {
         sourceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        rows = Self.rows(from: sourceText)
+        rows = PatternTextNormalizer.rows(from: sourceText)
+    }
+
+    mutating func clearPastedText() {
+        sourceText = ""
+        rows = []
     }
 
     mutating func setPDF(path: String, fileName: String) {
@@ -176,11 +181,6 @@ private struct NewProjectDraft {
         sourceFileName = fileName
     }
 
-    private static func rows(from text: String) -> [String] {
-        text.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-    }
 }
 
 private struct CreateProjectView: View {
@@ -204,6 +204,9 @@ private struct CreateProjectView: View {
                             Text(sourceType.displayName)
                                 .tag(sourceType)
                         }
+                    }
+                    .onChange(of: draft.sourceType) { _, newSourceType in
+                        handleSourceTypeChange(newSourceType)
                     }
                 }
 
@@ -292,6 +295,12 @@ private struct CreateProjectView: View {
         }
     }
 
+    private func handleSourceTypeChange(_ sourceType: ImportSource) {
+        if sourceType != .text {
+            draft.clearPastedText()
+            isShowingTextImport = false
+        }
+    }
 
 }
 
