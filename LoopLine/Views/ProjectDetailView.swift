@@ -122,9 +122,12 @@ struct ProjectDetailView: View {
 
     @ViewBuilder
     private var readingDestination: some View {
-        if project.sourceType == .pdf {
+        switch project.sourceType {
+        case .pdf:
             PDFReadingView(project: project)
-        } else {
+        case .image:
+            ImageReadingView(project: project)
+        case .text:
             ReadingModeView(project: project)
         }
     }

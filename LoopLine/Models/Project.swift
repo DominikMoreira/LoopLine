@@ -1,5 +1,7 @@
 import Foundation
+import ImageIO
 import SwiftData
+import UniformTypeIdentifiers
 
 @Model
 final class Project {
@@ -72,9 +74,41 @@ enum ImportedImageStorage {
     }
 
     static func saveImageData(_ data: Data) throws -> URL {
+        guard let imageSource = CGImageSourceCreateWithData(data as CFData, nil) else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+
+        let thumbnailOptions = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCache: false,
+            kCGImageSourceThumbnailMaxPixelSize: 2400
+        ] as CFDictionary
+
+        guard let image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, thumbnailOptions) else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+
         let fileName = "\(UUID().uuidString).jpg"
         let destinationURL = try directoryURL().appendingPathComponent(fileName)
-        try data.write(to: destinationURL, options: .atomic)
+        guard let destination = CGImageDestinationCreateWithURL(
+            destinationURL as CFURL,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+
+        let destinationOptions = [
+            kCGImageDestinationLossyCompressionQuality: 0.82
+        ] as CFDictionary
+        CGImageDestinationAddImage(destination, image, destinationOptions)
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+
         return destinationURL
     }
 
