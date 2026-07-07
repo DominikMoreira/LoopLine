@@ -1,4 +1,5 @@
 import Foundation
+import PhotosUI
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -118,11 +119,22 @@ struct ProjectListView: View {
             repeatTotal: nil,
             rows: draft.sourceType == .text ? draft.rows : [],
             sourceText: draft.sourceType == .text && !trimmedSourceText.isEmpty ? trimmedSourceText : nil,
-            sourceFilePath: draft.sourceType == .pdf ? draft.sourceFilePath : nil,
+            sourceFilePath: sourceFilePath(from: draft),
             notes: []
         )
 
         modelContext.insert(project)
+    }
+
+    private func sourceFilePath(from draft: NewProjectDraft) -> String? {
+        switch draft.sourceType {
+        case .pdf:
+            draft.sourceFilePath
+        case .image:
+            draft.imageFilePath
+        case .text:
+            nil
+        }
     }
 
     private func confirmProjectDeletion() {
@@ -134,6 +146,8 @@ struct ProjectListView: View {
     private func deleteProject(_ project: Project) {
         if project.sourceType == .pdf {
             ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
+        } else if project.sourceType == .image {
+            ImportedImageStorage.delete(storedReference: project.sourceFilePath)
         }
 
         modelContext.delete(project)
@@ -148,6 +162,8 @@ private struct NewProjectDraft {
     var sourceText = ""
     var sourceFilePath: String?
     var sourceFileName: String?
+    var imageFilePath: String?
+    var imageFileName: String?
     var rows: [String] = []
 
     var trimmedSourceText: String {
@@ -166,7 +182,7 @@ private struct NewProjectDraft {
         case .pdf:
             sourceFilePath != nil
         case .image:
-            true
+            imageFilePath != nil
         }
     }
 
@@ -190,6 +206,16 @@ private struct NewProjectDraft {
         sourceFileName = nil
     }
 
+    mutating func setImage(path: String, fileName: String) {
+        imageFilePath = path
+        imageFileName = fileName
+    }
+
+    mutating func clearImage() {
+        imageFilePath = nil
+        imageFileName = nil
+    }
+
 }
 
 private struct CreateProjectView: View {
@@ -197,7 +223,10 @@ private struct CreateProjectView: View {
     @State private var draft = NewProjectDraft()
     @State private var isShowingTextImport = false
     @State private var isShowingPDFImporter = false
+    @State private var selectedImageItem: PhotosPickerItem?
     @State private var pdfImportError: String?
+    @State private var imageImportError: String?
+    @State private var isImportingImage = false
 
     let onCreate: (NewProjectDraft) -> Void
 
@@ -261,6 +290,39 @@ private struct CreateProjectView: View {
                         }
                     }
                 }
+
+                if draft.sourceType == .image {
+                    Section("Image") {
+                        PhotosPicker(
+                            draft.imageFileName == nil ? "Choose Image" : "Choose Different Image",
+                            selection: $selectedImageItem,
+                            matching: .images
+                        )
+                        .disabled(isImportingImage)
+
+                        if isImportingImage {
+                            ProgressView("Importing image...")
+                        } else if let imageFilePath = draft.imageFilePath {
+                            StoredImagePreview(storedReference: imageFilePath, height: 160)
+
+                            if let imageFileName = draft.imageFileName {
+                                Label(imageFileName, systemImage: "photo")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            Text("An image is required for image projects.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if let imageImportError {
+                            Text(imageImportError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
             }
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
@@ -275,7 +337,7 @@ private struct CreateProjectView: View {
                     Button("Create") {
                         onCreate(draft)
                     }
-                    .disabled(!draft.isValid)
+                    .disabled(!draft.isValid || isImportingImage)
                 }
             }
             .sheet(isPresented: $isShowingTextImport) {
@@ -289,6 +351,9 @@ private struct CreateProjectView: View {
                 allowedContentTypes: [.pdf]
             ) { result in
                 importPDF(from: result)
+            }
+            .onChange(of: selectedImageItem) { _, newItem in
+                importImage(from: newItem)
             }
         }
     }
@@ -305,6 +370,42 @@ private struct CreateProjectView: View {
         }
     }
 
+    private func importImage(from item: PhotosPickerItem?) {
+        guard let item else { return }
+
+        isImportingImage = true
+        imageImportError = nil
+
+        Task {
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self) else {
+                    throw CocoaError(.fileReadCorruptFile)
+                }
+
+                let localURL = try ImportedImageStorage.saveImageData(data)
+                await MainActor.run {
+                    guard draft.sourceType == .image else {
+                        ImportedImageStorage.delete(storedReference: localURL.lastPathComponent)
+                        selectedImageItem = nil
+                        isImportingImage = false
+                        return
+                    }
+
+                    ImportedImageStorage.delete(storedReference: draft.imageFilePath)
+                    draft.setImage(path: localURL.lastPathComponent, fileName: localURL.lastPathComponent)
+                    selectedImageItem = nil
+                    isImportingImage = false
+                }
+            } catch {
+                await MainActor.run {
+                    imageImportError = "Could not import the selected image."
+                    selectedImageItem = nil
+                    isImportingImage = false
+                }
+            }
+        }
+    }
+
     private func handleSourceTypeChange(_ sourceType: ImportSource) {
         if sourceType != .text {
             draft.clearPastedText()
@@ -316,6 +417,14 @@ private struct CreateProjectView: View {
             draft.clearPDF()
             isShowingPDFImporter = false
             pdfImportError = nil
+        }
+
+        if sourceType != .image {
+            ImportedImageStorage.delete(storedReference: draft.imageFilePath)
+            draft.clearImage()
+            selectedImageItem = nil
+            imageImportError = nil
+            isImportingImage = false
         }
     }
 

@@ -71,15 +71,21 @@ struct ProjectDetailView: View {
 
     private var headerSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(project.name)
-                    .font(.title2)
-                    .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 12) {
+                if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+                    StoredImagePreview(storedReference: sourceFilePath, height: 180)
+                }
 
-                if let subtitle = project.subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(project.name)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+
+                    if let subtitle = project.subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .padding(.vertical, 4)
@@ -93,6 +99,10 @@ struct ProjectDetailView: View {
             if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
                 DetailRow(label: "PDF", value: URL(fileURLWithPath: sourceFilePath).lastPathComponent)
             }
+
+            if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+                DetailRow(label: "Image", value: URL(fileURLWithPath: sourceFilePath).lastPathComponent)
+            }
         }
     }
 
@@ -102,7 +112,7 @@ struct ProjectDetailView: View {
                 readingDestination
             }
 
-            if project.sourceType != .pdf {
+            if project.sourceType == .text {
                 Button("Import Pasted Text") {
                     isShowingTextImport = true
                 }
@@ -112,9 +122,12 @@ struct ProjectDetailView: View {
 
     @ViewBuilder
     private var readingDestination: some View {
-        if project.sourceType == .pdf {
+        switch project.sourceType {
+        case .pdf:
             PDFReadingView(project: project)
-        } else {
+        case .image:
+            ImageReadingView(project: project)
+        case .text:
             ReadingModeView(project: project)
         }
     }
@@ -244,6 +257,8 @@ struct ProjectDetailView: View {
     private func deleteProject() {
         if project.sourceType == .pdf {
             ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
+        } else if project.sourceType == .image {
+            ImportedImageStorage.delete(storedReference: project.sourceFilePath)
         }
 
         modelContext.delete(project)
