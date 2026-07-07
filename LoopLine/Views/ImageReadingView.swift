@@ -14,14 +14,14 @@ struct ImageReadingView: View {
                     )
                     .padding(18)
                 }
-                .background(readingBackground.ignoresSafeArea())
+                .background(LoopLineTheme.readingBackground.ignoresSafeArea())
                 .overlay(alignment: .bottomLeading) {
                     Text("Pinch to zoom - drag to pan")
                         .font(.caption.monospaced())
-                        .foregroundStyle(.white.opacity(0.58))
+                        .foregroundStyle(LoopLineTheme.readingSecondaryText)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(Color.black.opacity(0.26), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .background(LoopLineTheme.mediaHintBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .padding(18)
                 }
             } else {
@@ -34,13 +34,8 @@ struct ImageReadingView: View {
         }
         .navigationTitle("Reading Mode")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbarBackground(readingBackground, for: .navigationBar)
+        .toolbarBackground(LoopLineTheme.readingBackground, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
-    }
-
-    private var readingBackground: Color {
-        Color(red: 0.06, green: 0.09, blue: 0.14)
     }
 }
 

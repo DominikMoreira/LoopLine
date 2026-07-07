@@ -2,7 +2,6 @@ import SwiftData
 import SwiftUI
 
 struct ReadingModeView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
     @Query private var settings: [AppSettings]
@@ -237,31 +236,31 @@ struct ReadingModeView: View {
     }
 
     private var readingBackground: Color {
-        colorScheme == .dark ? Color(red: 0.06, green: 0.09, blue: 0.14) : Color(.systemBackground)
+        LoopLineTheme.readingBackground
     }
 
     private var panelBackground: Color {
-        colorScheme == .dark ? Color(red: 0.12, green: 0.16, blue: 0.23) : Color(.secondarySystemBackground)
+        LoopLineTheme.readingPanel
     }
 
     private var panelStroke: Color {
-        colorScheme == .dark ? Color.white.opacity(0.18) : Color.secondary.opacity(0.22)
+        LoopLineTheme.readingStroke
     }
 
     private var primaryText: Color {
-        colorScheme == .dark ? Color.white.opacity(0.9) : Color.primary
+        LoopLineTheme.readingPrimaryText
     }
 
     private var secondaryText: Color {
-        colorScheme == .dark ? Color.white.opacity(0.58) : Color.secondary
+        LoopLineTheme.readingSecondaryText
     }
 
     private var dividerColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.14) : Color.secondary.opacity(0.18)
+        LoopLineTheme.readingStroke
     }
 
     private var stripBackground: Color {
-        colorScheme == .dark ? Color.white.opacity(0.06) : Color(.secondarySystemBackground)
+        LoopLineTheme.readingStripFill
     }
 
     private func selectRow(at index: Int) {
@@ -324,7 +323,6 @@ struct ReadingModeView: View {
 }
 
 private struct ReadingRow: View {
-    @Environment(\.colorScheme) private var colorScheme
 
     let rowNumber: Int
     let text: String
@@ -369,18 +367,15 @@ private struct ReadingRow: View {
     }
 
     private var rowNumberColor: Color {
-        if isActive { return .black }
-        return colorScheme == .dark ? Color.white.opacity(0.42) : Color.secondary
+        isActive ? .black : LoopLineTheme.readingSecondaryText
     }
 
     private var rowTextColor: Color {
-        if isActive { return .black }
-        return colorScheme == .dark ? Color.white.opacity(0.72) : Color.primary.opacity(0.78)
+        isActive ? .black : LoopLineTheme.readingPrimaryText
     }
 }
 
 private struct CounterControlPanel: View {
-    @Environment(\.colorScheme) private var colorScheme
 
     let label: String
     let value: String
@@ -448,27 +443,27 @@ private struct CounterControlPanel: View {
     }
 
     private var primaryText: Color {
-        colorScheme == .dark ? .white : .primary
+        LoopLineTheme.readingPrimaryText
     }
 
     private var secondaryText: Color {
-        colorScheme == .dark ? Color.white.opacity(0.48) : Color.secondary
+        LoopLineTheme.readingSecondaryText
     }
 
     private var secondaryButtonBackground: Color {
-        colorScheme == .dark ? Color.white.opacity(0.14) : Color(.secondarySystemBackground)
+        LoopLineTheme.readingControlFill
     }
 
     private var primaryIncreaseForeground: Color {
         if isPrimary {
-            return colorScheme == .dark ? .black : .white
+            return LoopLineTheme.primaryActionForeground
         }
         return primaryText
     }
 
     private var primaryIncreaseBackground: Color {
         if isPrimary {
-            return colorScheme == .dark ? .white : .primary
+            return LoopLineTheme.primaryActionBackground
         }
         return secondaryButtonBackground
     }

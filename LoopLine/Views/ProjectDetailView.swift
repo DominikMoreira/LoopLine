@@ -39,7 +39,7 @@ struct ProjectDetailView: View {
             .padding(.top, 22)
             .padding(.bottom, 36)
         }
-        .background(Color(.systemBackground))
+        .background(LoopLineTheme.appBackground)
         .navigationTitle("Project")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -124,7 +124,7 @@ struct ProjectDetailView: View {
             LoopLineStatTile(value: progressText, label: "Progress")
         }
         .frame(maxWidth: .infinity)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
@@ -173,7 +173,7 @@ struct ProjectDetailView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(18)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             } else {
                 VStack(spacing: 14) {
                     ForEach(project.notes) { note in
@@ -212,7 +212,7 @@ struct ProjectDetailView: View {
                 )
             }
             .padding(.horizontal, 16)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
     }
 
@@ -234,7 +234,7 @@ struct ProjectDetailView: View {
                 DetailRow(label: "Notes", value: String(project.notes.count))
             }
             .padding(16)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
     }
 
@@ -448,7 +448,7 @@ struct PastedTextImportView: View {
                     .frame(minHeight: 280)
                     .padding(10)
                     .scrollContentBackground(.hidden)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
@@ -535,13 +535,13 @@ private struct EditProjectView: View {
                     .font(.title3)
                     .textFieldStyle(.plain)
                     .padding(16)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 LoopLineFieldLabel(text: "Subtitle")
                 TextField("Subtitle", text: $draft.subtitle)
                     .textFieldStyle(.plain)
                     .padding(16)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 Spacer()
             }
@@ -614,7 +614,7 @@ struct AddNoteView: View {
                             .textFieldStyle(.plain)
                             .padding(16)
                             .frame(minHeight: 116, alignment: .topLeading)
-                            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
@@ -624,7 +624,6 @@ struct AddNoteView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Toggle("Attach to a specific row?", isOn: $attachesToRow)
                             .font(.headline)
-                            .tint(.primary)
                             .onChange(of: attachesToRow) { _, isAttached in
                                 if !isAttached {
                                     draft.rowNumberText = ""
@@ -686,7 +685,7 @@ struct AddNoteView: View {
                     .textFieldStyle(.plain)
                     .font(.title3.monospacedDigit())
                     .padding(16)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
@@ -739,7 +738,7 @@ struct AddNoteView: View {
                 Spacer()
             }
             .padding(16)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
@@ -758,7 +757,7 @@ private struct NoteRow: View {
                 .font(.caption.weight(.bold).monospacedDigit())
                 .foregroundStyle(.secondary)
                 .frame(width: 50, height: 42)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .stroke(Color.secondary.opacity(0.28), lineWidth: 1)

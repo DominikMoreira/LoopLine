@@ -1,16 +1,49 @@
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
+enum LoopLineTheme {
+    static let appBackground = Color(.systemBackground)
+    static let groupedBackground = Color(.systemGroupedBackground)
+    static let surface = Color(.secondarySystemBackground)
+    static let elevatedSurface = Color(.tertiarySystemBackground)
+    static let separator = Color(.separator)
+    static let subtleStroke = Color(.separator).opacity(0.9)
+    static let mutedFill = Color(.systemFill)
+    static let progressTrack = Color(.tertiarySystemFill)
+    static let progressFill = Color(.secondaryLabel)
+
+    static let primaryActionBackground = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark ? .white : .label
+    })
+
+    static let primaryActionForeground = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark ? .black : .white
+    })
+
+    static let readingBackground = appBackground
+    static let readingPanel = surface
+    static let readingPrimaryText = Color(.label)
+    static let readingSecondaryText = Color(.secondaryLabel)
+    static let readingStroke = separator
+    static let readingControlFill = surface
+    static let readingStripFill = surface
+    static let mediaHintBackground = Color(.tertiarySystemBackground)
+}
+
 struct LoopLinePrimaryButtonStyle: ButtonStyle {
     var isFullWidth = true
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .foregroundStyle(.white)
+            .foregroundStyle(LoopLineTheme.primaryActionForeground)
             .frame(maxWidth: isFullWidth ? .infinity : nil)
             .frame(minHeight: 50)
             .padding(.horizontal, 18)
-            .background(Color.primary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.primaryActionBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .opacity(configuration.isPressed ? 0.82 : 1)
     }
 }
@@ -25,7 +58,7 @@ struct LoopLineSecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 48)
             .padding(.horizontal, 16)
-            .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.elevatedSurface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(tint.opacity(0.28), lineWidth: 1)
@@ -37,7 +70,7 @@ struct LoopLineSecondaryButtonStyle: ButtonStyle {
 struct LoopLineIconButtonStyle: ButtonStyle {
     var size: CGFloat = 56
     var foregroundColor: Color = .primary
-    var backgroundColor: Color = Color(.secondarySystemBackground)
+    var backgroundColor: Color = LoopLineTheme.surface
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -80,7 +113,7 @@ struct LoopLineSourceBadge: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Color(.secondarySystemBackground), in: Capsule())
+            .background(LoopLineTheme.surface, in: Capsule())
     }
 
     private var iconName: String {
@@ -110,10 +143,10 @@ struct LoopLineSourcePlaceholder: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
         }
     }
 
@@ -149,9 +182,9 @@ struct LoopLineProgressBar: View {
 
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color(.systemGray5))
+                    .fill(LoopLineTheme.progressTrack)
                 Capsule()
-                    .fill(Color.secondary)
+                    .fill(LoopLineTheme.progressFill)
                     .frame(width: max(geometry.size.width * clampedProgress, clampedProgress > 0 ? 12 : 0))
             }
         }
@@ -167,6 +200,7 @@ struct LoopLineStatTile: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.title2.weight(.bold))
+                .foregroundStyle(.primary)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)

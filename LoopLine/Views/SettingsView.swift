@@ -41,7 +41,7 @@ private struct SettingsForm: View {
             .padding(.top, 12)
             .padding(.bottom, 32)
         }
-        .background(Color(.systemBackground))
+        .background(LoopLineTheme.appBackground)
     }
 
     private var readingModeSection: some View {
@@ -81,7 +81,7 @@ private struct SettingsForm: View {
                             saveSettings()
                         }
                     }
-                    .tint(.primary)
+                    .tint(LoopLineTheme.primaryActionBackground)
 
                     HStack {
                         Text("Low")
@@ -93,7 +93,7 @@ private struct SettingsForm: View {
                 }
                 .padding(16)
             }
-            .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
@@ -114,7 +114,7 @@ private struct SettingsForm: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
@@ -156,7 +156,6 @@ private struct SettingsToggleRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .tint(.primary)
         .padding(16)
     }
 }

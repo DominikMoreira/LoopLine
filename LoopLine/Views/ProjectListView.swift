@@ -21,7 +21,7 @@ struct ProjectListView: View {
                     projectList
                 }
             }
-            .background(Color(.systemBackground))
+            .background(LoopLineTheme.appBackground)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $isShowingCreateProject) {
@@ -74,7 +74,7 @@ struct ProjectListView: View {
 
             ZStack {
                 Circle()
-                    .fill(Color(.secondarySystemBackground))
+                    .fill(LoopLineTheme.surface)
                     .frame(width: 112, height: 112)
                     .overlay {
                         Circle()
@@ -140,7 +140,7 @@ struct ProjectListView: View {
             }
             .listRowInsets(EdgeInsets(top: 18, leading: 24, bottom: 18, trailing: 18))
             .listRowSeparator(.visible)
-            .listRowBackground(Color(.systemBackground))
+            .listRowBackground(LoopLineTheme.appBackground)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button("Delete Project", role: .destructive) {
                     projectPendingDeletion = project
@@ -354,7 +354,7 @@ private struct CreateProjectView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 110)
             }
-            .background(Color(.systemBackground))
+            .background(LoopLineTheme.appBackground)
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -403,7 +403,7 @@ private struct CreateProjectView: View {
                 .font(.title3)
                 .textFieldStyle(.plain)
                 .padding(18)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .stroke(Color.secondary.opacity(0.42), lineWidth: 1)
@@ -414,14 +414,14 @@ private struct CreateProjectView: View {
                 .font(.body)
                 .textFieldStyle(.plain)
                 .padding(16)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
     }
 
     private var stepIndicator: some View {
         HStack(spacing: 10) {
             Capsule()
-                .fill(Color.primary)
+                .fill(LoopLineTheme.primaryActionBackground)
                 .frame(width: 38, height: 8)
             Capsule()
                 .fill(Color(.systemGray4))
@@ -615,9 +615,9 @@ private struct SourceOptionRow: View {
         HStack(spacing: 14) {
             Image(systemName: iconName)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(isSelected ? .white : .primary)
+                .foregroundStyle(isSelected ? LoopLineTheme.primaryActionForeground : .primary)
                 .frame(width: 44, height: 44)
-                .background(isSelected ? Color.primary : Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(isSelected ? LoopLineTheme.primaryActionBackground : LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(sourceType.displayName)
@@ -632,13 +632,13 @@ private struct SourceOptionRow: View {
 
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
-                .foregroundStyle(isSelected ? Color.primary : Color.secondary.opacity(0.4))
+                .foregroundStyle(isSelected ? LoopLineTheme.primaryActionBackground : Color.secondary.opacity(0.4))
         }
         .padding(14)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isSelected ? Color.primary : Color.secondary.opacity(0.24), lineWidth: isSelected ? 1.5 : 1)
+                .stroke(isSelected ? LoopLineTheme.primaryActionBackground : Color.secondary.opacity(0.24), lineWidth: isSelected ? 1.5 : 1)
         }
     }
 
