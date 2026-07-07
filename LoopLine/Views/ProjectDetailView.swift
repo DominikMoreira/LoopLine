@@ -242,6 +242,10 @@ struct ProjectDetailView: View {
     }
 
     private func deleteProject() {
+        if project.sourceType == .pdf {
+            ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
+        }
+
         modelContext.delete(project)
         saveChanges()
         dismiss()
@@ -375,12 +379,10 @@ struct PastedTextImportView: View {
 private struct EditProjectDraft {
     var name: String
     var subtitle: String
-    var sourceType: ImportSource
 
     init(project: Project) {
         name = project.name
         subtitle = project.subtitle ?? ""
-        sourceType = project.sourceType
     }
 
     var trimmedName: String {
@@ -413,13 +415,6 @@ private struct EditProjectView: View {
                 Section {
                     TextField("Project name", text: $draft.name)
                     TextField("Subtitle", text: $draft.subtitle)
-
-                    Picker("Source Type", selection: $draft.sourceType) {
-                        ForEach(ImportSource.allCases, id: \.self) { sourceType in
-                            Text(sourceType.displayName)
-                                .tag(sourceType)
-                        }
-                    }
                 }
             }
             .navigationTitle("Edit Project")
@@ -444,24 +439,8 @@ private struct EditProjectView: View {
     private func saveProject() {
         project.name = draft.trimmedName
         project.subtitle = draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle
-        project.sourceType = draft.sourceType
-        clearStaleSourceFields()
         try? modelContext.save()
         dismiss()
-    }
-
-    private func clearStaleSourceFields() {
-        if draft.sourceType != .text {
-            project.sourceText = nil
-        }
-
-        if draft.sourceType != .pdf {
-            project.sourceFilePath = nil
-        }
-
-        if draft.sourceType != .image {
-            project.coverImagePath = nil
-        }
     }
 }
 

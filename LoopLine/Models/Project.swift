@@ -99,4 +99,13 @@ enum ImportedPDFStorage {
 
         return localURL
     }
+
+    static func delete(storedReference: String?) {
+        guard let storedReference,
+              let fileURL = fileURL(for: storedReference) else {
+            return
+        }
+
+        try? FileManager.default.removeItem(at: fileURL)
+    }
 }

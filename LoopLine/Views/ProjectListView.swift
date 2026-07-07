@@ -132,6 +132,10 @@ struct ProjectListView: View {
     }
 
     private func deleteProject(_ project: Project) {
+        if project.sourceType == .pdf {
+            ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
+        }
+
         modelContext.delete(project)
         try? modelContext.save()
     }
@@ -179,6 +183,11 @@ private struct NewProjectDraft {
     mutating func setPDF(path: String, fileName: String) {
         sourceFilePath = path
         sourceFileName = fileName
+    }
+
+    mutating func clearPDF() {
+        sourceFilePath = nil
+        sourceFileName = nil
     }
 
 }
@@ -288,6 +297,7 @@ private struct CreateProjectView: View {
         do {
             let sourceURL = try result.get()
             let localURL = try ImportedPDFStorage.copyIntoStorage(from: sourceURL)
+            ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
             draft.setPDF(path: localURL.lastPathComponent, fileName: localURL.lastPathComponent)
             pdfImportError = nil
         } catch {
@@ -299,6 +309,13 @@ private struct CreateProjectView: View {
         if sourceType != .text {
             draft.clearPastedText()
             isShowingTextImport = false
+        }
+
+        if sourceType != .pdf {
+            ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
+            draft.clearPDF()
+            isShowingPDFImporter = false
+            pdfImportError = nil
         }
     }
 
