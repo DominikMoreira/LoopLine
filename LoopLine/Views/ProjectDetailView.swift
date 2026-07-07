@@ -8,6 +8,7 @@ struct ProjectDetailView: View {
     @State private var isShowingAddNote = false
     @State private var isShowingDeleteConfirmation = false
     @State private var isShowingEditProject = false
+    @State private var isShowingTextImport = false
 
     private var totalRows: Int {
         project.rows.count
@@ -60,6 +61,12 @@ struct ProjectDetailView: View {
         .sheet(isPresented: $isShowingEditProject) {
             EditProjectView(project: project)
         }
+        .sheet(isPresented: $isShowingTextImport) {
+            PastedTextImportView(initialText: project.sourceText ?? "") { text in
+                importPastedText(text)
+                isShowingTextImport = false
+            }
+        }
     }
 
     private var headerSection: some View {
@@ -82,14 +89,33 @@ struct ProjectDetailView: View {
     private var metadataSection: some View {
         Section("Metadata") {
             DetailRow(label: "Source Type", value: project.sourceType.displayName)
+
+            if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
+                DetailRow(label: "PDF", value: URL(fileURLWithPath: sourceFilePath).lastPathComponent)
+            }
         }
     }
 
     private var readingSection: some View {
         Section {
             NavigationLink("Open Reading Mode") {
-                ReadingModeView(project: project)
+                readingDestination
             }
+
+            if project.sourceType != .pdf {
+                Button("Import Pasted Text") {
+                    isShowingTextImport = true
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var readingDestination: some View {
+        if project.sourceType == .pdf {
+            PDFReadingView(project: project)
+        } else {
+            ReadingModeView(project: project)
         }
     }
 
@@ -216,10 +242,26 @@ struct ProjectDetailView: View {
     }
 
     private func deleteProject() {
+        if project.sourceType == .pdf {
+            ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
+        }
+
         modelContext.delete(project)
         saveChanges()
         dismiss()
     }
+
+    private func importPastedText(_ text: String) {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        project.sourceType = .text
+        project.sourceText = trimmedText
+        project.sourceFilePath = nil
+        project.coverImagePath = nil
+        project.rows = PatternTextNormalizer.rows(from: trimmedText)
+        project.currentRow = min(max(project.currentRow, 1), project.rows.count)
+        saveChanges()
+    }
+
 
     #if DEBUG
     private func loadSamplePattern() {
@@ -286,15 +328,61 @@ private struct NoteDraft {
     }
 }
 
+struct PastedTextImportView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+
+    let onImport: (String) -> Void
+
+    init(initialText: String, onImport: @escaping (String) -> Void) {
+        _text = State(initialValue: initialText)
+        self.onImport = onImport
+    }
+
+    private var trimmedText: String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var canImport: Bool {
+        !trimmedText.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Pattern Text") {
+                    TextEditor(text: $text)
+                        .frame(minHeight: 240)
+                        .textInputAutocapitalization(.sentences)
+                }
+            }
+            .navigationTitle("Import Text")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Import") {
+                        onImport(trimmedText)
+                    }
+                    .disabled(!canImport)
+                }
+            }
+        }
+    }
+}
+
 private struct EditProjectDraft {
     var name: String
     var subtitle: String
-    var sourceType: ImportSource
 
     init(project: Project) {
         name = project.name
         subtitle = project.subtitle ?? ""
-        sourceType = project.sourceType
     }
 
     var trimmedName: String {
@@ -327,13 +415,6 @@ private struct EditProjectView: View {
                 Section {
                     TextField("Project name", text: $draft.name)
                     TextField("Subtitle", text: $draft.subtitle)
-
-                    Picker("Source Type", selection: $draft.sourceType) {
-                        ForEach(ImportSource.allCases, id: \.self) { sourceType in
-                            Text(sourceType.displayName)
-                                .tag(sourceType)
-                        }
-                    }
                 }
             }
             .navigationTitle("Edit Project")
@@ -358,24 +439,8 @@ private struct EditProjectView: View {
     private func saveProject() {
         project.name = draft.trimmedName
         project.subtitle = draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle
-        project.sourceType = draft.sourceType
-        clearStaleSourceFields()
         try? modelContext.save()
         dismiss()
-    }
-
-    private func clearStaleSourceFields() {
-        if draft.sourceType != .text {
-            project.sourceText = nil
-        }
-
-        if draft.sourceType != .pdf {
-            project.sourceFilePath = nil
-        }
-
-        if draft.sourceType != .image {
-            project.coverImagePath = nil
-        }
     }
 }
 
@@ -525,4 +590,11 @@ private struct CounterControlRow: View {
 
     return EditProjectView(project: project)
         .modelContainer(container)
+}
+
+#Preview("Import Text") {
+    PastedTextImportView(
+        initialText: "Cast on 24 stitches.\nKnit every row until piece measures 48 inches.\nBind off loosely.",
+        onImport: { _ in }
+    )
 }

@@ -12,7 +12,7 @@ enum ImportSource: String, Codable, CaseIterable {
         case .image:
             "Image"
         case .text:
-            "Text"
+            "Pasted Text"
         }
     }
 }

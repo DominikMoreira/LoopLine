@@ -1,5 +1,7 @@
+import Foundation
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ProjectListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -114,8 +116,9 @@ struct ProjectListView: View {
             currentRow: 1,
             repeatCurrent: 1,
             repeatTotal: nil,
-            rows: draft.rows,
+            rows: draft.sourceType == .text ? draft.rows : [],
             sourceText: draft.sourceType == .text && !trimmedSourceText.isEmpty ? trimmedSourceText : nil,
+            sourceFilePath: draft.sourceType == .pdf ? draft.sourceFilePath : nil,
             notes: []
         )
 
@@ -129,6 +132,10 @@ struct ProjectListView: View {
     }
 
     private func deleteProject(_ project: Project) {
+        if project.sourceType == .pdf {
+            ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
+        }
+
         modelContext.delete(project)
         try? modelContext.save()
     }
@@ -139,16 +146,58 @@ private struct NewProjectDraft {
     var subtitle = ""
     var sourceType: ImportSource = .text
     var sourceText = ""
+    var sourceFilePath: String?
+    var sourceFileName: String?
     var rows: [String] = []
 
-    var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    var trimmedSourceText: String {
+        sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    var isValid: Bool {
+        let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return hasName && hasRequiredSource
+    }
+
+    private var hasRequiredSource: Bool {
+        switch sourceType {
+        case .text:
+            !trimmedSourceText.isEmpty
+        case .pdf:
+            sourceFilePath != nil
+        case .image:
+            true
+        }
+    }
+
+    mutating func setPastedText(_ text: String) {
+        sourceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        rows = PatternTextNormalizer.rows(from: sourceText)
+    }
+
+    mutating func clearPastedText() {
+        sourceText = ""
+        rows = []
+    }
+
+    mutating func setPDF(path: String, fileName: String) {
+        sourceFilePath = path
+        sourceFileName = fileName
+    }
+
+    mutating func clearPDF() {
+        sourceFilePath = nil
+        sourceFileName = nil
+    }
+
 }
 
 private struct CreateProjectView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft = NewProjectDraft()
+    @State private var isShowingTextImport = false
+    @State private var isShowingPDFImporter = false
+    @State private var pdfImportError: String?
 
     let onCreate: (NewProjectDraft) -> Void
 
@@ -163,6 +212,52 @@ private struct CreateProjectView: View {
                         ForEach(ImportSource.allCases, id: \.self) { sourceType in
                             Text(sourceType.displayName)
                                 .tag(sourceType)
+                        }
+                    }
+                    .onChange(of: draft.sourceType) { _, newSourceType in
+                        handleSourceTypeChange(newSourceType)
+                    }
+                }
+
+                if draft.sourceType == .text {
+                    Section("Pasted Text") {
+                        Button(draft.trimmedSourceText.isEmpty ? "Enter Pasted Text" : "Edit Pasted Text") {
+                            isShowingTextImport = true
+                        }
+
+                        if draft.rows.isEmpty {
+                            Text("Pattern text is required for pasted text projects.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("\(draft.rows.count) rows ready to import")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                if draft.sourceType == .pdf {
+                    Section("PDF") {
+                        Button(draft.sourceFileName == nil ? "Choose PDF" : "Choose Different PDF") {
+                            pdfImportError = nil
+                            isShowingPDFImporter = true
+                        }
+
+                        if let sourceFileName = draft.sourceFileName {
+                            Text(sourceFileName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("A PDF is required for PDF projects.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if let pdfImportError {
+                            Text(pdfImportError)
+                                .font(.caption)
+                                .foregroundStyle(.red)
                         }
                     }
                 }
@@ -183,6 +278,44 @@ private struct CreateProjectView: View {
                     .disabled(!draft.isValid)
                 }
             }
+            .sheet(isPresented: $isShowingTextImport) {
+                PastedTextImportView(initialText: draft.sourceText) { text in
+                    draft.setPastedText(text)
+                    isShowingTextImport = false
+                }
+            }
+            .fileImporter(
+                isPresented: $isShowingPDFImporter,
+                allowedContentTypes: [.pdf]
+            ) { result in
+                importPDF(from: result)
+            }
+        }
+    }
+
+    private func importPDF(from result: Result<URL, Error>) {
+        do {
+            let sourceURL = try result.get()
+            let localURL = try ImportedPDFStorage.copyIntoStorage(from: sourceURL)
+            ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
+            draft.setPDF(path: localURL.lastPathComponent, fileName: localURL.lastPathComponent)
+            pdfImportError = nil
+        } catch {
+            pdfImportError = "Could not import the selected PDF."
+        }
+    }
+
+    private func handleSourceTypeChange(_ sourceType: ImportSource) {
+        if sourceType != .text {
+            draft.clearPastedText()
+            isShowingTextImport = false
+        }
+
+        if sourceType != .pdf {
+            ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
+            draft.clearPDF()
+            isShowingPDFImporter = false
+            pdfImportError = nil
         }
     }
 
