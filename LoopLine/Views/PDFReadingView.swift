@@ -15,8 +15,24 @@ struct PDFReadingView: View {
     var body: some View {
         Group {
             if let pdfURL {
-                PDFKitView(url: pdfURL)
-                    .ignoresSafeArea(edges: .bottom)
+                VStack(spacing: 0) {
+                    PDFKitView(url: pdfURL)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        }
+                        .padding(16)
+
+                    Text("Pinch to zoom - drag to pan")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.white.opacity(0.58))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.black.opacity(0.26), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .padding(.bottom, 16)
+                }
+                .background(readingBackground.ignoresSafeArea())
             } else {
                 ContentUnavailableView(
                     "PDF Unavailable",
@@ -25,8 +41,15 @@ struct PDFReadingView: View {
                 )
             }
         }
-        .navigationTitle(project.name)
+        .navigationTitle("Reading Mode")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbarBackground(readingBackground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+    }
+
+    private var readingBackground: Color {
+        Color(red: 0.06, green: 0.09, blue: 0.14)
     }
 }
 
@@ -38,6 +61,7 @@ private struct PDFKitView: UIViewRepresentable {
         pdfView.autoScales = true
         pdfView.displayMode = .singlePageContinuous
         pdfView.displayDirection = .vertical
+        pdfView.backgroundColor = .clear
         pdfView.document = PDFDocument(url: url)
         return pdfView
     }
