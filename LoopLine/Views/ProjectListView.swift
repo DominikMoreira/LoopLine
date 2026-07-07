@@ -254,6 +254,8 @@ private struct ProjectCard: View {
     private var thumbnail: some View {
         if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
             StoredImagePreview(storedReference: sourceFilePath, height: 74)
+                .frame(width: 74, height: 74)
+                .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)

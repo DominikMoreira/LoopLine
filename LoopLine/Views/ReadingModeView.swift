@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct ReadingModeView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
     @Query private var settings: [AppSettings]
@@ -49,7 +50,6 @@ struct ReadingModeView: View {
             .background(readingBackground.ignoresSafeArea())
             .navigationTitle("Reading Mode")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(readingBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
@@ -74,7 +74,8 @@ struct ReadingModeView: View {
                     addNote(from: draft)
                     isShowingAddNote = false
                 }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
             }
             .alert("Reset Counters?", isPresented: $isShowingResetConfirmation) {
                 Button("Reset", role: .destructive) {
@@ -90,17 +91,11 @@ struct ReadingModeView: View {
     private var readingPanel: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(red: 0.12, green: 0.16, blue: 0.23))
+                .fill(panelBackground)
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        .stroke(panelStroke, lineWidth: 1)
                 }
-
-            Rectangle()
-                .fill(Color.blue.opacity(0.62 * appSettings.guideOpacity))
-                .frame(width: 2)
-                .padding(.leading, 210)
-                .padding(.vertical, 1)
 
             VStack(alignment: .leading, spacing: 12) {
                 if !project.rows.isEmpty {
@@ -139,7 +134,7 @@ struct ReadingModeView: View {
     private func sourceTextContent(_ sourceText: String) -> some View {
         Text(sourceText)
             .font(readableFont)
-            .foregroundStyle(.white.opacity(0.88))
+            .foregroundStyle(primaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
             .textSelection(.enabled)
@@ -151,14 +146,14 @@ struct ReadingModeView: View {
             systemImage: "doc.text",
             description: Text("No pattern content is available yet.")
         )
-        .foregroundStyle(.white)
+        .foregroundStyle(primaryText)
         .frame(maxWidth: .infinity, minHeight: 360)
     }
 
     private var readingControls: some View {
         VStack(spacing: 12) {
             Divider()
-                .overlay(Color.white.opacity(0.14))
+                .overlay(dividerColor)
 
             CounterControlPanel(
                 label: "ROW",
@@ -173,7 +168,7 @@ struct ReadingModeView: View {
             )
 
             Divider()
-                .overlay(Color.white.opacity(0.14))
+                .overlay(dividerColor)
 
             CounterControlPanel(
                 label: "REPEAT",
@@ -205,21 +200,21 @@ struct ReadingModeView: View {
 
                 Text(reminderText)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(primaryText)
                     .lineLimit(1)
 
                 Spacer()
 
                 Text("+ Add")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.62))
+                    .foregroundStyle(secondaryText)
             }
             .padding(.horizontal, 16)
             .frame(height: 54)
-            .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(stripBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    .stroke(panelStroke, lineWidth: 1)
             }
         }
         .buttonStyle(.plain)
@@ -242,7 +237,31 @@ struct ReadingModeView: View {
     }
 
     private var readingBackground: Color {
-        Color(red: 0.06, green: 0.09, blue: 0.14)
+        colorScheme == .dark ? Color(red: 0.06, green: 0.09, blue: 0.14) : Color(.systemBackground)
+    }
+
+    private var panelBackground: Color {
+        colorScheme == .dark ? Color(red: 0.12, green: 0.16, blue: 0.23) : Color(.secondarySystemBackground)
+    }
+
+    private var panelStroke: Color {
+        colorScheme == .dark ? Color.white.opacity(0.18) : Color.secondary.opacity(0.22)
+    }
+
+    private var primaryText: Color {
+        colorScheme == .dark ? Color.white.opacity(0.9) : Color.primary
+    }
+
+    private var secondaryText: Color {
+        colorScheme == .dark ? Color.white.opacity(0.58) : Color.secondary
+    }
+
+    private var dividerColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.14) : Color.secondary.opacity(0.18)
+    }
+
+    private var stripBackground: Color {
+        colorScheme == .dark ? Color.white.opacity(0.06) : Color(.secondarySystemBackground)
     }
 
     private func selectRow(at index: Int) {
@@ -305,6 +324,8 @@ struct ReadingModeView: View {
 }
 
 private struct ReadingRow: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     let rowNumber: Int
     let text: String
     let isActive: Bool
@@ -324,12 +345,12 @@ private struct ReadingRow: View {
         HStack(alignment: .top, spacing: 10) {
             Text("\(rowNumber).")
                 .fontWeight(isActive ? .bold : .regular)
-                .foregroundStyle(isActive ? .black : .white.opacity(0.42))
+                .foregroundStyle(rowNumberColor)
                 .monospacedDigit()
                 .frame(minWidth: 34, alignment: .trailing)
 
             Text(text)
-                .foregroundStyle(isActive ? .black : .white.opacity(0.72))
+                .foregroundStyle(rowTextColor)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -346,9 +367,21 @@ private struct ReadingRow: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Sets this as the current row")
     }
+
+    private var rowNumberColor: Color {
+        if isActive { return .black }
+        return colorScheme == .dark ? Color.white.opacity(0.42) : Color.secondary
+    }
+
+    private var rowTextColor: Color {
+        if isActive { return .black }
+        return colorScheme == .dark ? Color.white.opacity(0.72) : Color.primary.opacity(0.78)
+    }
 }
 
 private struct CounterControlPanel: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     let label: String
     let value: String
     let detail: String?
@@ -370,7 +403,7 @@ private struct CounterControlPanel: View {
         HStack(spacing: 16) {
             Text(label)
                 .font(.caption.weight(.bold))
-                .foregroundStyle(.white.opacity(0.48))
+                .foregroundStyle(secondaryText)
                 .frame(width: 72, alignment: .leading)
 
             Button(action: decreaseAction) {
@@ -378,8 +411,8 @@ private struct CounterControlPanel: View {
             }
             .buttonStyle(LoopLineIconButtonStyle(
                 size: buttonSize,
-                foregroundColor: .white,
-                backgroundColor: Color.white.opacity(0.14)
+                foregroundColor: primaryText,
+                backgroundColor: secondaryButtonBackground
             ))
             .disabled(!canDecrease)
             .opacity(canDecrease ? 1 : 0.38)
@@ -387,14 +420,14 @@ private struct CounterControlPanel: View {
             VStack(spacing: 1) {
                 Text(value)
                     .font((isPrimary ? Font.system(size: 48, weight: .bold) : Font.system(size: 34, weight: .bold)).monospacedDigit())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
 
                 if let detail {
                     Text(detail)
                         .font(.caption.monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.42))
+                        .foregroundStyle(secondaryText)
                 }
             }
             .frame(minWidth: isPrimary ? 74 : 58)
@@ -404,14 +437,40 @@ private struct CounterControlPanel: View {
             }
             .buttonStyle(LoopLineIconButtonStyle(
                 size: buttonSize,
-                foregroundColor: isPrimary ? .black : .white,
-                backgroundColor: isPrimary ? .white : Color.white.opacity(0.14)
+                foregroundColor: primaryIncreaseForeground,
+                backgroundColor: primaryIncreaseBackground
             ))
             .disabled(!canIncrease)
             .opacity(canIncrease ? 1 : 0.38)
 
             Spacer(minLength: 0)
         }
+    }
+
+    private var primaryText: Color {
+        colorScheme == .dark ? .white : .primary
+    }
+
+    private var secondaryText: Color {
+        colorScheme == .dark ? Color.white.opacity(0.48) : Color.secondary
+    }
+
+    private var secondaryButtonBackground: Color {
+        colorScheme == .dark ? Color.white.opacity(0.14) : Color(.secondarySystemBackground)
+    }
+
+    private var primaryIncreaseForeground: Color {
+        if isPrimary {
+            return colorScheme == .dark ? .black : .white
+        }
+        return primaryText
+    }
+
+    private var primaryIncreaseBackground: Color {
+        if isPrimary {
+            return colorScheme == .dark ? .white : .primary
+        }
+        return secondaryButtonBackground
     }
 }
 

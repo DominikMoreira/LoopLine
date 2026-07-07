@@ -52,7 +52,8 @@ struct ProjectDetailView: View {
                 addNote(from: draft)
                 isShowingAddNote = false
             }
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
         }
         .alert("Delete Project?", isPresented: $isShowingDeleteConfirmation) {
             Button("Delete Project", role: .destructive) {
