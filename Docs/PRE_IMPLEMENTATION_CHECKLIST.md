@@ -20,6 +20,7 @@ This document captures the current decisions for the first release of the knitti
 | Setup | Project name + optional photo | Basic organization matters, but it should stay simple in V1. Project-centric workflows are common in successful apps. |
 | Tracking | Main row counter | This is the category’s most basic value. |
 | Tracking | Repeat counter | Repeat handling is explicitly important in knitCompanion and Row Counter-style apps. |
+| Tracking | Stitch counter | Stitch-by-stitch counting rounds out the simple V1 tracking set. |
 | Tracking | Row notes/reminders | Row-specific reminders are a proven “don’t miss a step” feature. |
 | Reading | Reading mode for PDF/image/text | Pattern-following is the heart of the experience. |
 | Reading | Horizontal guide | Helps users keep track of the current line or row. |
@@ -32,8 +33,8 @@ This document captures the current decisions for the first release of the knitti
 
 - Project library with create, edit, and delete project actions; cover photo is optional.
 - Import pattern from PDF, image, or pasted text.
-- Project detail screen with pattern, current row, current repeat, and notes summary.
-- Row counter with increment, decrement, reset confirmation, and repeat counter.
+- Project detail screen with pattern, current row, current repeat, current stitch, and notes summary.
+- Row, repeat, and stitch counters with increment, decrement, and reset confirmation.
 - Row-specific reminders, for example: “On row 12, start decreases.”
 - Reading mode with zoom, pan, horizontal guide, vertical guide, and dark mode.
 - Simple notes, either project-wide notes or row-linked notes.

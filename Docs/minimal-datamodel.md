@@ -26,7 +26,7 @@ A simple rule guides the model design:
 
 Examples:
 
-- Store: current row, repeat counter, notes, settings, import source reference.
+- Store: current row, repeat counter, stitch counter, notes, settings, import source reference.
 - Derive: progress percentage, total rows, active reminder text, note preview.
 
 ## Minimal Persisted Models
@@ -79,6 +79,7 @@ struct Project: Identifiable, Codable {
 
     var currentRow: Int
     var repeatCurrent: Int
+    var currentStitch: Int
     var repeatTotal: Int?
 
     var notes: [ProjectNote]
@@ -129,6 +130,7 @@ struct AppSettings: Codable {
 | `rows` | `[String]` | Reading mode | Minimal normalized representation of pattern content |
 | `currentRow` | `Int` | Detail, reading mode, list progress | Main reading position |
 | `repeatCurrent` | `Int` | Detail, reading mode | Current repeat count |
+| `currentStitch` | `Int` | Detail, reading mode | Current stitch count |
 | `repeatTotal` | `Int?` | Detail, reading mode | Optional repeat target, since not every project may use it |
 | `notes` | `[ProjectNote]` | Detail, reading mode, notes sheet | Stores reminders and project notes |
 
@@ -227,6 +229,7 @@ It reads:
 - `detailMeta`
 - `currentRow`
 - `repeatCurrent`
+- `currentStitch`
 - `repeatTotal`
 - `progress`
 - `notes`
@@ -235,6 +238,7 @@ The stat tiles still do not need extra storage:
 
 - Current row = `currentRow`
 - Repeat = `repeatCurrent` and `repeatTotal`
+- Stitches = `currentStitch`
 - Progress = derived from `currentRow` and `rows.count`
 
 ### 4. Reading Mode
@@ -249,6 +253,7 @@ Required project data:
 - `rows`
 - `currentRow`
 - `repeatCurrent`
+- `currentStitch`
 - `repeatTotal`
 - `notes`
 

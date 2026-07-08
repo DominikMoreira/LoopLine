@@ -44,7 +44,7 @@ struct ReadingModeView: View {
                 }
                 .padding(.horizontal, 18)
                 .padding(.top, 18)
-                .padding(.bottom, appSettings.largeControls ? 260 : 220)
+                .padding(.bottom, appSettings.largeControls ? 340 : 290)
             }
             .background(readingBackground.ignoresSafeArea())
             .navigationTitle("Reading Mode")
@@ -82,7 +82,7 @@ struct ReadingModeView: View {
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("This will reset the current row and repeat to 1.")
+                Text("This will reset the current row, repeat, and stitch to 1.")
             }
         }
     }
@@ -179,6 +179,21 @@ struct ReadingModeView: View {
                 canIncrease: canIncreaseRepeat,
                 decreaseAction: decrementRepeat,
                 increaseAction: incrementRepeat
+            )
+
+            Divider()
+                .overlay(dividerColor)
+
+            CounterControlPanel(
+                label: "STITCHES",
+                value: String(project.currentStitch),
+                detail: nil,
+                isPrimary: false,
+                usesLargeControls: appSettings.largeControls,
+                canDecrease: project.currentStitch > 1,
+                canIncrease: true,
+                decreaseAction: decrementStitch,
+                increaseAction: incrementStitch
             )
 
             reminderStrip
@@ -293,9 +308,21 @@ struct ReadingModeView: View {
         saveChanges()
     }
 
+    private func incrementStitch() {
+        project.currentStitch += 1
+        saveChanges()
+    }
+
+    private func decrementStitch() {
+        guard project.currentStitch > 1 else { return }
+        project.currentStitch -= 1
+        saveChanges()
+    }
+
     private func resetCounters() {
         project.currentRow = 1
         project.repeatCurrent = 1
+        project.currentStitch = 1
         saveChanges()
     }
 

@@ -162,6 +162,7 @@ struct ProjectListView: View {
             sourceType: draft.sourceType,
             currentRow: 1,
             repeatCurrent: 1,
+            currentStitch: 1,
             repeatTotal: nil,
             rows: draft.sourceType == .text ? draft.rows : [],
             sourceText: draft.sourceType == .text && !trimmedSourceText.isEmpty ? trimmedSourceText : nil,
