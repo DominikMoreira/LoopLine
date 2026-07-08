@@ -16,6 +16,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.large)
         }
     }
 
@@ -31,16 +32,47 @@ private struct SettingsForm: View {
     @Bindable var settings: AppSettings
 
     var body: some View {
-        Form {
-            Section("Reading Mode") {
-                Toggle("Large Controls", isOn: $settings.largeControls)
-                    .onChange(of: settings.largeControls) { _, _ in saveSettings() }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 34) {
+                readingModeSection
+                aboutSection
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 32)
+        }
+        .background(LoopLineTheme.appBackground)
+    }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Guide Opacity")
+    private var readingModeSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            LoopLineSectionHeader(title: "Reading Mode")
+
+            VStack(spacing: 0) {
+                SettingsToggleRow(
+                    title: "Large controls",
+                    subtitle: "Bigger row counter buttons",
+                    isOn: $settings.largeControls
+                )
+                .onChange(of: settings.largeControls) { _, _ in saveSettings() }
+
+                Divider()
+                    .padding(.leading, 16)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Guide opacity")
+                                .font(.headline)
+                            Text("Customize row highlight visibility")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
                         Spacer()
+
                         Text(settings.guideOpacity, format: .percent.precision(.fractionLength(0)))
+                            .font(.subheadline.weight(.semibold).monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
 
@@ -49,13 +81,43 @@ private struct SettingsForm: View {
                             saveSettings()
                         }
                     }
-                }
-                .padding(.vertical, 4)
-            }
+                    .tint(LoopLineTheme.primaryActionBackground)
 
-            Section("About") {
-                LabeledContent("App", value: "LoopLine")
-                LabeledContent("Version", value: appVersion)
+                    HStack {
+                        Text("Low")
+                        Spacer()
+                        Text("High")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(16)
+            }
+            .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+            }
+        }
+    }
+
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            LoopLineSectionHeader(title: "About")
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("LoopLine")
+                    .font(.headline)
+                Text("Version \(appVersion) - MVP Release")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
             }
         }
     }
@@ -76,6 +138,25 @@ private struct SettingsForm: View {
 
     private func saveSettings() {
         try? modelContext.save()
+    }
+}
+
+private struct SettingsToggleRow: View {
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
     }
 }
 

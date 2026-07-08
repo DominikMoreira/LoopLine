@@ -12,9 +12,18 @@ struct ImageReadingView: View {
                         height: nil,
                         contentMode: .fit
                     )
-                    .padding()
+                    .padding(18)
                 }
-                .background(Color(.systemBackground))
+                .background(LoopLineTheme.readingBackground.ignoresSafeArea())
+                .overlay(alignment: .bottomLeading) {
+                    Text("Pinch to zoom - drag to pan")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(LoopLineTheme.readingSecondaryText)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(LoopLineTheme.mediaHintBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .padding(18)
+                }
             } else {
                 ContentUnavailableView(
                     "Image Unavailable",
@@ -23,8 +32,10 @@ struct ImageReadingView: View {
                 )
             }
         }
-        .navigationTitle(project.name)
+        .navigationTitle("Reading Mode")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(LoopLineTheme.readingBackground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
 }
 

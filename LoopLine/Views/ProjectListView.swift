@@ -12,19 +12,18 @@ struct ProjectListView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            VStack(spacing: 0) {
+                header
+
                 if projects.isEmpty {
                     emptyState
                 } else {
                     projectList
                 }
             }
-            .navigationTitle("Projects")
-            .toolbar {
-                Button("Add Project") {
-                    isShowingCreateProject = true
-                }
-            }
+            .background(LoopLineTheme.appBackground)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $isShowingCreateProject) {
                 CreateProjectView { draft in
                     createProject(from: draft)
@@ -44,17 +43,73 @@ struct ProjectListView: View {
         }
     }
 
-    private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No Projects Yet", systemImage: "tray")
-        } description: {
-            Text("Create your first knitting project to start tracking rows.")
-        } actions: {
-            Button("Add Project") {
+    private var header: some View {
+        HStack(alignment: .center) {
+            Text("Projects")
+                .font(.largeTitle.weight(.bold))
+                .foregroundStyle(.primary)
+
+            Spacer()
+
+            Button {
                 isShowingCreateProject = true
+            } label: {
+                Label("New", systemImage: "plus")
+                    .font(.headline)
+                    .labelStyle(.titleAndIcon)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(LoopLinePrimaryButtonStyle(isFullWidth: false))
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 18)
+        .padding(.bottom, 20)
+        .overlay(alignment: .bottom) {
+            Divider()
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 22) {
+            Spacer(minLength: 120)
+
+            ZStack {
+                Circle()
+                    .fill(LoopLineTheme.surface)
+                    .frame(width: 112, height: 112)
+                    .overlay {
+                        Circle()
+                            .stroke(Color.secondary.opacity(0.32), lineWidth: 1)
+                    }
+
+                Image(systemName: "sparkle")
+                    .font(.title.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 8) {
+                Text("No projects yet")
+                    .font(.title3.weight(.bold))
+
+                Text("Add a pattern to get started - from a PDF, photo, or pasted text.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+            }
+
+            Button {
+                isShowingCreateProject = true
+            } label: {
+                Label("Create first project", systemImage: "plus")
+                    .labelStyle(.titleAndIcon)
+            }
+            .buttonStyle(LoopLinePrimaryButtonStyle())
+            .padding(.horizontal, 32)
+            .padding(.top, 12)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var deleteConfirmationBinding: Binding<Bool> {
@@ -81,28 +136,19 @@ struct ProjectListView: View {
             NavigationLink {
                 ProjectDetailView(project: project)
             } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(project.name)
-                        .font(.headline)
-
-                    if let subtitle = project.subtitle, !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Text("Current row: \(project.currentRow)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
+                ProjectCard(project: project)
             }
+            .listRowInsets(EdgeInsets(top: 18, leading: 24, bottom: 18, trailing: 18))
+            .listRowSeparator(.visible)
+            .listRowBackground(LoopLineTheme.appBackground)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button("Delete Project", role: .destructive) {
                     projectPendingDeletion = project
                 }
             }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 
     private func createProject(from draft: NewProjectDraft) {
@@ -152,6 +198,72 @@ struct ProjectListView: View {
 
         modelContext.delete(project)
         try? modelContext.save()
+    }
+}
+
+private struct ProjectCard: View {
+    let project: Project
+
+    private var totalRows: Int {
+        project.rows.count
+    }
+
+    private var progress: Double? {
+        guard totalRows > 0 else { return nil }
+        let clampedRow = min(max(project.currentRow, 1), totalRows)
+        return Double(clampedRow) / Double(totalRows)
+    }
+
+    private var rowSummary: String {
+        totalRows > 0 ? "Row  \(project.currentRow)/\(totalRows)" : "Row  \(project.currentRow)"
+    }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            thumbnail
+                .frame(width: 74, height: 74)
+
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(project.name)
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+
+                    Text(project.subtitle?.isEmpty == false ? project.subtitle ?? "" : project.sourceType.displayName)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+
+                HStack(spacing: 14) {
+                    LoopLineProgressBar(progress: progress)
+                        .frame(maxWidth: .infinity)
+
+                    Text(rowSummary)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private var thumbnail: some View {
+        if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+            StoredImagePreview(storedReference: sourceFilePath, height: 74)
+                .frame(width: 74, height: 74)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                }
+        } else {
+            LoopLineSourcePlaceholder(sourceType: project.sourceType)
+        }
     }
 }
 
@@ -215,7 +327,6 @@ private struct NewProjectDraft {
         imageFilePath = nil
         imageFileName = nil
     }
-
 }
 
 private struct CreateProjectView: View {
@@ -232,98 +343,18 @@ private struct CreateProjectView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Project name", text: $draft.name)
-                    TextField("Subtitle", text: $draft.subtitle)
-
-                    Picker("Source Type", selection: $draft.sourceType) {
-                        ForEach(ImportSource.allCases, id: \.self) { sourceType in
-                            Text(sourceType.displayName)
-                                .tag(sourceType)
-                        }
-                    }
-                    .onChange(of: draft.sourceType) { _, newSourceType in
-                        handleSourceTypeChange(newSourceType)
-                    }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    projectInfoSection
+                    stepIndicator
+                    sourceSelectionSection
+                    selectedSourceSection
                 }
-
-                if draft.sourceType == .text {
-                    Section("Pasted Text") {
-                        Button(draft.trimmedSourceText.isEmpty ? "Enter Pasted Text" : "Edit Pasted Text") {
-                            isShowingTextImport = true
-                        }
-
-                        if draft.rows.isEmpty {
-                            Text("Pattern text is required for pasted text projects.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("\(draft.rows.count) rows ready to import")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
-                if draft.sourceType == .pdf {
-                    Section("PDF") {
-                        Button(draft.sourceFileName == nil ? "Choose PDF" : "Choose Different PDF") {
-                            pdfImportError = nil
-                            isShowingPDFImporter = true
-                        }
-
-                        if let sourceFileName = draft.sourceFileName {
-                            Text(sourceFileName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("A PDF is required for PDF projects.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        if let pdfImportError {
-                            Text(pdfImportError)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                        }
-                    }
-                }
-
-                if draft.sourceType == .image {
-                    Section("Image") {
-                        PhotosPicker(
-                            draft.imageFileName == nil ? "Choose Image" : "Choose Different Image",
-                            selection: $selectedImageItem,
-                            matching: .images
-                        )
-                        .disabled(isImportingImage)
-
-                        if isImportingImage {
-                            ProgressView("Importing image...")
-                        } else if let imageFilePath = draft.imageFilePath {
-                            StoredImagePreview(storedReference: imageFilePath, height: 160)
-
-                            if let imageFileName = draft.imageFileName {
-                                Label(imageFileName, systemImage: "photo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } else {
-                            Text("An image is required for image projects.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        if let imageImportError {
-                            Text(imageImportError)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                        }
-                    }
-                }
+                .padding(.horizontal, 24)
+                .padding(.top, 28)
+                .padding(.bottom, 110)
             }
+            .background(LoopLineTheme.appBackground)
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -332,13 +363,20 @@ private struct CreateProjectView: View {
                         dismiss()
                     }
                 }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        onCreate(draft)
-                    }
-                    .disabled(!draft.isValid || isImportingImage)
+            }
+            .safeAreaInset(edge: .bottom) {
+                Button {
+                    onCreate(draft)
+                } label: {
+                    Text("Create Project")
                 }
+                .buttonStyle(LoopLinePrimaryButtonStyle())
+                .disabled(!draft.isValid || isImportingImage)
+                .opacity((draft.isValid && !isImportingImage) ? 1 : 0.45)
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
+                .background(.regularMaterial)
             }
             .sheet(isPresented: $isShowingTextImport) {
                 PastedTextImportView(initialText: draft.sourceText) { text in
@@ -354,6 +392,146 @@ private struct CreateProjectView: View {
             }
             .onChange(of: selectedImageItem) { _, newItem in
                 importImage(from: newItem)
+            }
+        }
+    }
+
+    private var projectInfoSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            LoopLineFieldLabel(text: "Project name")
+            TextField("Aran Cable Sweater", text: $draft.name)
+                .font(.title3)
+                .textFieldStyle(.plain)
+                .padding(18)
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.42), lineWidth: 1)
+                }
+
+            LoopLineFieldLabel(text: "Subtitle")
+            TextField("Size, yarn, or recipient", text: $draft.subtitle)
+                .font(.body)
+                .textFieldStyle(.plain)
+                .padding(16)
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+    }
+
+    private var stepIndicator: some View {
+        HStack(spacing: 10) {
+            Capsule()
+                .fill(LoopLineTheme.primaryActionBackground)
+                .frame(width: 38, height: 8)
+            Capsule()
+                .fill(Color(.systemGray4))
+                .frame(width: 38, height: 8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 4)
+    }
+
+    private var sourceSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            LoopLineSectionHeader(title: "Add Pattern")
+
+            ForEach(ImportSource.allCases, id: \.self) { sourceType in
+                Button {
+                    draft.sourceType = sourceType
+                    handleSourceTypeChange(sourceType)
+                } label: {
+                    SourceOptionRow(
+                        sourceType: sourceType,
+                        isSelected: draft.sourceType == sourceType
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var selectedSourceSection: some View {
+        switch draft.sourceType {
+        case .text:
+            VStack(alignment: .leading, spacing: 12) {
+                Button(draft.trimmedSourceText.isEmpty ? "Enter Pasted Text" : "Edit Pasted Text") {
+                    isShowingTextImport = true
+                }
+                .buttonStyle(LoopLineSecondaryButtonStyle())
+
+                Text(draft.rows.isEmpty ? "Pattern text is required for pasted text projects." : "\(draft.rows.count) rows ready to import")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .pdf:
+            VStack(alignment: .leading, spacing: 12) {
+                Button(draft.sourceFileName == nil ? "Choose PDF" : "Choose Different PDF") {
+                    pdfImportError = nil
+                    isShowingPDFImporter = true
+                }
+                .buttonStyle(LoopLineSecondaryButtonStyle())
+
+                sourceStatus(
+                    fileName: draft.sourceFileName,
+                    emptyText: "A PDF is required for PDF projects.",
+                    errorText: pdfImportError,
+                    iconName: "doc.richtext"
+                )
+            }
+        case .image:
+            VStack(alignment: .leading, spacing: 12) {
+                PhotosPicker(
+                    selection: $selectedImageItem,
+                    matching: .images
+                ) {
+                    Text(draft.imageFileName == nil ? "Choose Image" : "Choose Different Image")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(LoopLineSecondaryButtonStyle())
+                .disabled(isImportingImage)
+
+                if isImportingImage {
+                    ProgressView("Importing image...")
+                } else if let imageFilePath = draft.imageFilePath {
+                    StoredImagePreview(storedReference: imageFilePath, height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    sourceStatus(
+                        fileName: draft.imageFileName,
+                        emptyText: "An image is required for image projects.",
+                        errorText: imageImportError,
+                        iconName: "photo"
+                    )
+                } else {
+                    sourceStatus(
+                        fileName: nil,
+                        emptyText: "An image is required for image projects.",
+                        errorText: imageImportError,
+                        iconName: "photo"
+                    )
+                }
+            }
+        }
+    }
+
+    private func sourceStatus(fileName: String?, emptyText: String, errorText: String?, iconName: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let fileName {
+                Label(fileName, systemImage: iconName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            } else {
+                Text(emptyText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let errorText {
+                Text(errorText)
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
         }
     }
@@ -427,7 +605,64 @@ private struct CreateProjectView: View {
             isImportingImage = false
         }
     }
+}
 
+private struct SourceOptionRow: View {
+    let sourceType: ImportSource
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: iconName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(isSelected ? LoopLineTheme.primaryActionForeground : .primary)
+                .frame(width: 44, height: 44)
+                .background(isSelected ? LoopLineTheme.primaryActionBackground : LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(sourceType.displayName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(isSelected ? LoopLineTheme.primaryActionBackground : Color.secondary.opacity(0.4))
+        }
+        .padding(14)
+        .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(isSelected ? LoopLineTheme.primaryActionBackground : Color.secondary.opacity(0.24), lineWidth: isSelected ? 1.5 : 1)
+        }
+    }
+
+    private var iconName: String {
+        switch sourceType {
+        case .pdf:
+            "doc.richtext"
+        case .image:
+            "photo"
+        case .text:
+            "text.alignleft"
+        }
+    }
+
+    private var description: String {
+        switch sourceType {
+        case .pdf:
+            "Import a saved pattern PDF."
+        case .image:
+            "Use a photo or screenshot."
+        case .text:
+            "Paste plain pattern text."
+        }
+    }
 }
 
 #Preview("Empty") {
