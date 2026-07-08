@@ -3,12 +3,22 @@ import SwiftUI
 struct ImageReadingView: View {
     let project: Project
 
+    private var imageReference: String? {
+        guard project.sourceType == .image,
+              let sourceFilePath = project.sourceFilePath,
+              ImportedImageStorage.fileURL(for: sourceFilePath) != nil else {
+            return nil
+        }
+
+        return sourceFilePath
+    }
+
     var body: some View {
         Group {
-            if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+            if let imageReference {
                 ScrollView([.vertical, .horizontal]) {
                     StoredImagePreview(
-                        storedReference: sourceFilePath,
+                        storedReference: imageReference,
                         height: nil,
                         contentMode: .fit
                     )
