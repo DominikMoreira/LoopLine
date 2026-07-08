@@ -171,6 +171,7 @@ struct ProjectListView: View {
         )
 
         modelContext.insert(project)
+        try? modelContext.save()
     }
 
     private func sourceFilePath(from draft: NewProjectDraft) -> String? {
@@ -216,7 +217,12 @@ private struct ProjectCard: View {
     }
 
     private var rowSummary: String {
-        totalRows > 0 ? "Row  \(project.currentRow)/\(totalRows)" : "Row  \(project.currentRow)"
+        if totalRows > 0 {
+            let clampedRow = min(max(project.currentRow, 1), totalRows)
+            return "Row \(clampedRow)/\(totalRows)"
+        }
+
+        return "Row \(max(project.currentRow, 1))"
     }
 
     var body: some View {
@@ -339,6 +345,7 @@ private struct CreateProjectView: View {
     @State private var pdfImportError: String?
     @State private var imageImportError: String?
     @State private var isImportingImage = false
+    @State private var didCreateProject = false
 
     let onCreate: (NewProjectDraft) -> Void
 
@@ -361,12 +368,14 @@ private struct CreateProjectView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        cleanupDraftFiles()
                         dismiss()
                     }
                 }
             }
             .safeAreaInset(edge: .bottom) {
                 Button {
+                    didCreateProject = true
                     onCreate(draft)
                 } label: {
                     Text("Create Project")
@@ -393,6 +402,11 @@ private struct CreateProjectView: View {
             }
             .onChange(of: selectedImageItem) { _, newItem in
                 importImage(from: newItem)
+            }
+            .onDisappear {
+                if !didCreateProject {
+                    cleanupDraftFiles()
+                }
             }
         }
     }
@@ -542,7 +556,7 @@ private struct CreateProjectView: View {
             let sourceURL = try result.get()
             let localURL = try ImportedPDFStorage.copyIntoStorage(from: sourceURL)
             ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
-            draft.setPDF(path: localURL.lastPathComponent, fileName: localURL.lastPathComponent)
+            draft.setPDF(path: localURL.lastPathComponent, fileName: sourceURL.lastPathComponent)
             pdfImportError = nil
         } catch {
             pdfImportError = "Could not import the selected PDF."
@@ -605,6 +619,11 @@ private struct CreateProjectView: View {
             imageImportError = nil
             isImportingImage = false
         }
+    }
+
+    private func cleanupDraftFiles() {
+        ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
+        ImportedImageStorage.delete(storedReference: draft.imageFilePath)
     }
 }
 

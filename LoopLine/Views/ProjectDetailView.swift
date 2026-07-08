@@ -30,9 +30,6 @@ struct ProjectDetailView: View {
                 notesSection
                 trackingSection
                 metadataSection
-                #if DEBUG
-                developmentSection
-                #endif
                 secondaryActions
             }
             .padding(.horizontal, 24)
@@ -252,22 +249,6 @@ struct ProjectDetailView: View {
         }
     }
 
-    #if DEBUG
-    private var developmentSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            LoopLineSectionHeader(title: "Development")
-            Button("Load Sample Pattern") {
-                loadSamplePattern()
-            }
-            .buttonStyle(LoopLineSecondaryButtonStyle())
-
-            Text("Temporary test content. Delete after reading mode scroll testing.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-    #endif
-
     private var secondaryActions: some View {
         HStack(spacing: 16) {
             Button("Edit Project") {
@@ -377,47 +358,18 @@ struct ProjectDetailView: View {
         project.sourceFilePath = nil
         project.coverImagePath = nil
         project.rows = PatternTextNormalizer.rows(from: trimmedText)
-        project.currentRow = min(max(project.currentRow, 1), project.rows.count)
+        project.currentRow = clampedCurrentRow()
         saveChanges()
     }
-
-    #if DEBUG
-    private func loadSamplePattern() {
-        project.rows = Self.samplePatternRows
-        project.sourceText = Self.samplePatternRows.joined(separator: "\n")
-        project.currentRow = min(max(project.currentRow, 1), project.rows.count)
-        saveChanges()
-    }
-    #endif
 
     private func saveChanges() {
         try? modelContext.save()
     }
 
-    #if DEBUG
-    // TODO: Delete after reading mode scroll behavior testing.
-    private static let samplePatternRows = [
-        "CO 60 sts.",
-        "Row 1: K2, P2 across.",
-        "Row 2: P2, K2 across.",
-        "Row 3: K all sts.",
-        "Row 4: P all sts.",
-        "Row 5: K4, P2 across.",
-        "Row 6: P4, K2 across.",
-        "Row 7: K1, P1 rib across.",
-        "Row 8: P1, K1 rib across.",
-        "Row 9: K all sts, increasing 4 sts evenly.",
-        "Row 10: P all sts.",
-        "Row 11: K6, cable 4 front, K6; repeat across.",
-        "Row 12: P all sts.",
-        "Row 13: K all sts.",
-        "Row 14: P all sts.",
-        "Row 15: K2, P2 across.",
-        "Row 16: P2, K2 across.",
-        "Repeat Rows 1-16 until piece measures 20 cm.",
-        "Bind off loosely in pattern."
-    ]
-    #endif
+    private func clampedCurrentRow() -> Int {
+        guard !project.rows.isEmpty else { return 1 }
+        return min(max(project.currentRow, 1), project.rows.count)
+    }
 }
 
 struct NoteDraft {
@@ -750,7 +702,7 @@ struct AddNoteView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     if let rowNumber = draft.rowNumber {
-                        Text("Row  \(rowNumber)")
+                        Text("Row \(rowNumber)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

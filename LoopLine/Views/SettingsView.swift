@@ -108,7 +108,7 @@ private struct SettingsForm: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("LoopLine")
                     .font(.headline)
-                Text("Version \(appVersion) - MVP Release")
+                Text("Version \(appVersion)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
