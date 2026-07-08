@@ -121,6 +121,8 @@ struct ProjectDetailView: View {
             Divider()
             LoopLineStatTile(value: repeatDisplayText, label: "Repeat")
             Divider()
+            LoopLineStatTile(value: String(project.currentStitch), label: "Stitches")
+            Divider()
             LoopLineStatTile(value: progressText, label: "Progress")
         }
         .frame(maxWidth: .infinity)
@@ -209,6 +211,18 @@ struct ProjectDetailView: View {
                     canIncrease: canIncreaseRepeat,
                     decreaseAction: decrementRepeat,
                     increaseAction: incrementRepeat
+                )
+
+                Divider()
+
+                CounterControlRow(
+                    title: "Stitches",
+                    value: String(project.currentStitch),
+                    detail: nil,
+                    canDecrease: project.currentStitch > 1,
+                    canIncrease: true,
+                    decreaseAction: decrementStitch,
+                    increaseAction: incrementStitch
                 )
             }
             .padding(.horizontal, 16)
@@ -319,6 +333,17 @@ struct ProjectDetailView: View {
     private func decrementRepeat() {
         guard project.repeatCurrent > 1 else { return }
         project.repeatCurrent -= 1
+        saveChanges()
+    }
+
+    private func incrementStitch() {
+        project.currentStitch += 1
+        saveChanges()
+    }
+
+    private func decrementStitch() {
+        guard project.currentStitch > 1 else { return }
+        project.currentStitch -= 1
         saveChanges()
     }
 

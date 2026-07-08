@@ -19,6 +19,7 @@ The first release focuses on:
 - Paste pattern text
 - Row counter
 - Repeat counter
+- Stitch counter
 - Notes and row reminders
 - Reading mode
 - Horizontal and vertical guides

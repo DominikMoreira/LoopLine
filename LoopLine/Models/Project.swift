@@ -12,6 +12,7 @@ final class Project {
     var sourceType: ImportSource
     var currentRow: Int
     var repeatCurrent: Int
+    var currentStitch: Int = 1
     var repeatTotal: Int?
     var rows: [String]
     var sourceText: String?
@@ -29,6 +30,7 @@ final class Project {
         sourceType: ImportSource,
         currentRow: Int = 1,
         repeatCurrent: Int = 1,
+        currentStitch: Int = 1,
         repeatTotal: Int? = nil,
         rows: [String] = [],
         sourceText: String? = nil,
@@ -43,6 +45,7 @@ final class Project {
         self.sourceType = sourceType
         self.currentRow = currentRow
         self.repeatCurrent = repeatCurrent
+        self.currentStitch = currentStitch
         self.repeatTotal = repeatTotal
         self.rows = rows
         self.sourceText = sourceText
