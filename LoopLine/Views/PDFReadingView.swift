@@ -82,6 +82,18 @@ private struct PDFMarkupError: Identifiable {
     let message: String
 }
 
+private final class PDFMarkupPDFView: PDFView {
+    override var canBecomeFirstResponder: Bool {
+        true
+    }
+}
+
+private final class PDFMarkupCanvasView: PKCanvasView {
+    override var canBecomeFirstResponder: Bool {
+        true
+    }
+}
+
 private struct PDFKitView: UIViewRepresentable {
     let url: URL
     let isMarkupActive: Bool
@@ -92,7 +104,7 @@ private struct PDFKitView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> PDFView {
-        let pdfView = PDFView()
+        let pdfView = PDFMarkupPDFView()
         pdfView.autoScales = true
         pdfView.displayMode = .singlePageContinuous
         pdfView.displayDirection = .vertical
@@ -118,6 +130,10 @@ private struct PDFKitView: UIViewRepresentable {
         context.coordinator.configure(pdfView: pdfView, isMarkupActive: isMarkupActive)
     }
 
+    static func dismantleUIView(_ pdfView: PDFView, coordinator: Coordinator) {
+        coordinator.teardown()
+    }
+
     final class Coordinator: NSObject, PDFPageOverlayViewProvider, PKCanvasViewDelegate {
         var url: URL
 
@@ -125,6 +141,8 @@ private struct PDFKitView: UIViewRepresentable {
         private var markupError: Binding<PDFMarkupError?>
         private var storage: PDFMarkupStorage
         private let toolPicker = PKToolPicker()
+        private let defaultMarkupTool = PKInkingTool(.marker, color: UIColor.systemYellow.withAlphaComponent(0.55), width: 14)
+        private weak var pdfView: PDFView?
         private var canvasesByPage = [PDFPage: PKCanvasView]()
         private var pageIndexesByCanvas = [ObjectIdentifier: Int]()
         private var pendingSavesByCanvas = [ObjectIdentifier: DispatchWorkItem]()
@@ -133,6 +151,31 @@ private struct PDFKitView: UIViewRepresentable {
             self.url = url
             self.storage = PDFMarkupStorage(pdfURL: url)
             self.markupError = markupError
+            super.init()
+            toolPicker.selectedTool = defaultMarkupTool
+
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(saveBeforeAppResignsActive),
+                name: UIApplication.willResignActiveNotification,
+                object: nil
+            )
+        }
+
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+
+        func teardown() {
+            saveVisibleDrawings()
+            hideToolPicker()
+            canvasesByPage.values.forEach { toolPicker.removeObserver($0) }
+            pendingSavesByCanvas.values.forEach { $0.cancel() }
+            pendingSavesByCanvas.removeAll()
+        }
+
+        @objc private func saveBeforeAppResignsActive() {
+            saveVisibleDrawings()
         }
 
         func reset(for url: URL) {
@@ -147,27 +190,39 @@ private struct PDFKitView: UIViewRepresentable {
         }
 
         func configure(pdfView: PDFView, isMarkupActive: Bool) {
+            self.pdfView = pdfView
+            pdfView.isInMarkupMode = isMarkupActive
+
             guard self.isMarkupActive != isMarkupActive else {
                 canvasesByPage.values.forEach { configureCanvas($0) }
+                showToolPicker()
                 return
             }
 
             self.isMarkupActive = isMarkupActive
             pdfView.clearSelection()
+            canvasesByPage.values.forEach { configureCanvas($0) }
 
             if isMarkupActive {
-                canvasesByPage.values.forEach { configureCanvas($0) }
+                pdfView.layoutDocumentView()
+                showToolPicker()
             } else {
                 saveVisibleDrawings()
                 hideToolPicker()
-                canvasesByPage.values.forEach { configureCanvas($0) }
             }
         }
 
         func pdfView(_ view: PDFView, overlayViewFor page: PDFPage) -> UIView? {
+            self.pdfView = view
             let canvas = canvasesByPage[page] ?? makeCanvas(for: page, in: view)
             configureCanvas(canvas)
             return canvas
+        }
+
+        func pdfView(_ pdfView: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
+            guard let canvas = overlayView as? PKCanvasView else { return }
+            configureCanvas(canvas)
+            showToolPicker()
         }
 
         func pdfView(_ pdfView: PDFView, willEndDisplayingOverlayView overlayView: UIView, for page: PDFPage) {
@@ -176,12 +231,12 @@ private struct PDFKitView: UIViewRepresentable {
         }
 
         private func makeCanvas(for page: PDFPage, in pdfView: PDFView) -> PKCanvasView {
-            let canvas = PKCanvasView()
+            let canvas = PDFMarkupCanvasView()
             canvas.backgroundColor = .clear
             canvas.isOpaque = false
             canvas.delegate = self
             canvas.drawingPolicy = .anyInput
-            canvas.tool = PKInkingTool(.marker, color: UIColor.systemYellow.withAlphaComponent(0.55), width: 14)
+            canvas.tool = defaultMarkupTool
             toolPicker.addObserver(canvas)
 
             if let pageIndex = pageIndex(for: page, in: pdfView.document) {
@@ -196,13 +251,20 @@ private struct PDFKitView: UIViewRepresentable {
         private func configureCanvas(_ canvas: PKCanvasView) {
             canvas.drawingPolicy = .anyInput
             canvas.isUserInteractionEnabled = isMarkupActive
+            toolPicker.setVisible(isMarkupActive, forFirstResponder: canvas)
 
-            if isMarkupActive {
-                toolPicker.setVisible(true, forFirstResponder: canvas)
-                canvas.becomeFirstResponder()
-            } else {
-                toolPicker.setVisible(false, forFirstResponder: canvas)
+            if !isMarkupActive {
                 canvas.resignFirstResponder()
+            }
+        }
+
+        private func showToolPicker() {
+            guard isMarkupActive else { return }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self, let pdfView = self.pdfView, self.isMarkupActive, pdfView.window != nil else { return }
+                self.toolPicker.setVisible(true, forFirstResponder: pdfView)
+                pdfView.becomeFirstResponder()
             }
         }
 
@@ -234,6 +296,11 @@ private struct PDFKitView: UIViewRepresentable {
         }
 
         private func hideToolPicker() {
+            if let pdfView {
+                toolPicker.setVisible(false, forFirstResponder: pdfView)
+                pdfView.resignFirstResponder()
+            }
+
             canvasesByPage.values.forEach { canvas in
                 toolPicker.setVisible(false, forFirstResponder: canvas)
                 canvas.resignFirstResponder()
