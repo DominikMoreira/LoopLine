@@ -73,7 +73,14 @@ struct ProjectDetailView: View {
 
     private var mediaHeader: some View {
         Group {
-            if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+            if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
+                StoredPDFPreview(storedReference: sourceFilePath, height: 190)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                    }
+            } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
                 StoredImagePreview(storedReference: sourceFilePath, height: 190)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay {
