@@ -1,66 +1,97 @@
 # LoopLine - Knitting App
 
-A simple SwiftUI iOS app for following knitting patterns and tracking progress while knitting.
+LoopLine is a simple SwiftUI iOS app for managing knitting projects, importing patterns, and tracking progress while knitting.
 
 ## Goal
 
-Ship a small first version fast, then refine later.
+Ship a small first version quickly, then refine it based on real use.
 
 The first release focuses on:
-- Getting a pattern into the app quickly
-- Tracking progress without losing place
-- Making the pattern easy to read while knitting
 
-## MVP scope
+- Getting a pattern into the app quickly.
+- Tracking row, repeat, and stitch progress without losing place.
+- Making patterns easier to read while knitting.
+- Keeping the architecture simple enough to extend safely.
 
-- Create projects
-- Import pattern from PDF
-- Import pattern from image
-- Paste pattern text
-- Row counter
-- Repeat counter
-- Stitch counter
-- Notes and row reminders
-- Reading mode
-- Horizontal and vertical guides
-- Dark mode
-- Large tap targets
+## Current MVP Features
 
-## Tech stack
+- Project library.
+- Create, edit, and delete projects.
+- Import pattern source from PDF.
+- Import pattern source from image.
+- Paste pattern text.
+- Text reading mode with active row highlighting.
+- PDF reading mode with zoom/pan and markup support.
+- Image reading mode.
+- Row counter.
+- Repeat counter.
+- Stitch counter.
+- Notes and row reminders.
+- Reading mode settings for large controls and guide opacity.
+- Local persistence with SwiftData.
+- Local file storage for imported PDFs and images.
+
+## Tech Stack
 
 - Swift
 - SwiftUI
-- Local persistence only
-- Minimal dependencies
+- SwiftData
+- PDFKit
+- PencilKit
+- PhotosUI
+- Local file storage
+- Apple-native frameworks only
 
-## Project structure
+## Project Structure
 
 ```text
-.
+LoopLine/
 ├── App/
 ├── Models/
-├── Views/
-├── ViewModels/
 ├── Services/
-├── Docs/
-├── README.md
-└── AGENTS.md
+├── ViewModels/
+├── Views/
+├── Assets.xcassets
+└── ContentView.swift
+
+Docs/
+├── minimal-datamodel.md
+└── project-overview.md
 ```
 
-## Docs
+## Architecture
 
-See `Docs/` for planning and implementation notes:
-- Pre-implementation checklist
-- Minimal data model
-- Revised minimal data model
+The app follows a pragmatic SwiftUI structure:
 
-## Current status
+- `Models/` contains SwiftData models, domain enums, and simple data types.
+- `Views/` contains SwiftUI layout and UI composition.
+- `ViewModels/` contains screen-specific state, presentation logic, validation, and user flows.
+- `Services/` contains reusable technical helpers for storage, import, cleanup, and file handling.
 
-Project setup and planning phase.
+The current persisted models are:
 
-Next steps:
-- Add docs and agent instructions
-- Configure Codex workflow
-- Build the first app shell
-- Implement the minimal data layer
-- Build the project list screen
+| Model | Purpose |
+|---|---|
+| `Project` | Main knitting project data and tracking state. |
+| `ProjectNote` | Notes and row-specific reminders. |
+| `AppSettings` | Reading mode preferences. |
+
+## Documentation
+
+See `Docs/` for project notes:
+
+- `Docs/project-overview.md`: Current project structure, responsibilities, features, and flows.
+- `Docs/minimal-datamodel.md`: Data model notes for the MVP.
+
+## Current Status
+
+The app has moved beyond initial setup and now includes the MVP shell, local persistence, project management, import flows, reading modes, counters, notes, settings, and a clearer `Models` / `Views` / `ViewModels` / `Services` structure.
+
+Known scope boundaries for the MVP:
+
+- No sync or backend.
+- No Ravelry integration.
+- No OCR or AI parsing.
+- No Apple Watch support.
+- No social/community features.
+- No complex settings system.

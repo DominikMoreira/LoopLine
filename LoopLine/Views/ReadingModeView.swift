@@ -1,3 +1,4 @@
+import Observation
 import SwiftData
 import SwiftUI
 
@@ -5,38 +6,15 @@ struct ReadingModeView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
     @Query private var settings: [AppSettings]
-    @State private var isShowingAddNote = false
-    @State private var isShowingResetConfirmation = false
+    @State private var viewModel = ReadingModeViewModel()
 
     private var appSettings: AppSettings {
         settings.first ?? AppSettings()
     }
 
-    private var trimmedSourceText: String? {
-        guard let sourceText = project.sourceText?.trimmingCharacters(in: .whitespacesAndNewlines), !sourceText.isEmpty else {
-            return nil
-        }
-        return sourceText
-    }
-
-    private var readableFont: Font {
-        appSettings.largeControls ? .title3 : .body
-    }
-
-    private var totalRows: Int {
-        project.rows.count
-    }
-
-    private var activeRowIndex: Int? {
-        guard !project.rows.isEmpty else { return nil }
-        return min(max(project.currentRow, 1), project.rows.count) - 1
-    }
-
-    private var currentRowNotes: [ProjectNote] {
-        project.notes.filter { $0.rowNumber == project.currentRow }
-    }
-
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -53,7 +31,7 @@ struct ReadingModeView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 Button {
-                    isShowingResetConfirmation = true
+                    viewModel.isShowingResetConfirmation = true
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                 }
@@ -63,22 +41,21 @@ struct ReadingModeView: View {
                 readingControls
             }
             .onAppear {
-                scrollToActiveRow(with: proxy)
+                viewModel.scrollToActiveRow(for: project, with: proxy)
             }
             .onChange(of: project.currentRow) { _, _ in
-                scrollToActiveRow(with: proxy)
+                viewModel.scrollToActiveRow(for: project, with: proxy)
             }
-            .sheet(isPresented: $isShowingAddNote) {
+            .sheet(isPresented: $viewModel.isShowingAddNote) {
                 AddNoteView(currentRow: project.currentRow) { draft in
-                    addNote(from: draft)
-                    isShowingAddNote = false
+                    viewModel.addNote(from: draft, to: project, in: modelContext)
                 }
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
             }
-            .alert("Reset Counters?", isPresented: $isShowingResetConfirmation) {
+            .alert("Reset Counters?", isPresented: $viewModel.isShowingResetConfirmation) {
                 Button("Reset", role: .destructive) {
-                    resetCounters()
+                    viewModel.resetCounters(for: project, in: modelContext)
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
@@ -99,8 +76,8 @@ struct ReadingModeView: View {
             VStack(alignment: .leading, spacing: 12) {
                 if !project.rows.isEmpty {
                     rowContent
-                } else if let trimmedSourceText {
-                    sourceTextContent(trimmedSourceText)
+                } else if let sourceText = viewModel.trimmedSourceText(for: project) {
+                    sourceTextContent(sourceText)
                 } else {
                     emptyContent
                 }
@@ -117,22 +94,22 @@ struct ReadingModeView: View {
                 ReadingRow(
                     rowNumber: index + 1,
                     text: row,
-                    isActive: index == activeRowIndex,
+                    isActive: index == viewModel.activeRowIndex(for: project),
                     usesLargeControls: appSettings.largeControls,
                     guideOpacity: appSettings.guideOpacity,
                     selectAction: {
-                        selectRow(at: index)
+                        viewModel.selectRow(at: index, in: project, modelContext: modelContext)
                     }
                 )
                 .id(index)
             }
         }
-        .font(readableFont)
+        .font(viewModel.readableFont(for: appSettings))
     }
 
     private func sourceTextContent(_ sourceText: String) -> some View {
         Text(sourceText)
-            .font(readableFont)
+            .font(viewModel.readableFont(for: appSettings))
             .foregroundStyle(primaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -157,13 +134,13 @@ struct ReadingModeView: View {
             CounterControlPanel(
                 label: "ROW",
                 value: String(project.currentRow),
-                detail: totalRows > 0 ? "of \(totalRows)" : nil,
+                detail: viewModel.totalRows(for: project) > 0 ? "of \(viewModel.totalRows(for: project))" : nil,
                 isPrimary: true,
                 usesLargeControls: appSettings.largeControls,
                 canDecrease: project.currentRow > 1,
-                canIncrease: canIncreaseRow,
-                decreaseAction: decrementRow,
-                increaseAction: incrementRow
+                canIncrease: viewModel.canIncreaseRow(for: project),
+                decreaseAction: { viewModel.decrementRow(for: project, in: modelContext) },
+                increaseAction: { viewModel.incrementRow(for: project, in: modelContext) }
             )
 
             Divider()
@@ -176,9 +153,9 @@ struct ReadingModeView: View {
                 isPrimary: false,
                 usesLargeControls: appSettings.largeControls,
                 canDecrease: project.repeatCurrent > 1,
-                canIncrease: canIncreaseRepeat,
-                decreaseAction: decrementRepeat,
-                increaseAction: incrementRepeat
+                canIncrease: viewModel.canIncreaseRepeat(for: project),
+                decreaseAction: { viewModel.decrementRepeat(for: project, in: modelContext) },
+                increaseAction: { viewModel.incrementRepeat(for: project, in: modelContext) }
             )
 
             Divider()
@@ -192,8 +169,8 @@ struct ReadingModeView: View {
                 usesLargeControls: appSettings.largeControls,
                 canDecrease: project.currentStitch > 1,
                 canIncrease: true,
-                decreaseAction: decrementStitch,
-                increaseAction: incrementStitch
+                decreaseAction: { viewModel.decrementStitch(for: project, in: modelContext) },
+                increaseAction: { viewModel.incrementStitch(for: project, in: modelContext) }
             )
 
             reminderStrip
@@ -206,13 +183,13 @@ struct ReadingModeView: View {
 
     private var reminderStrip: some View {
         Button {
-            isShowingAddNote = true
+            viewModel.isShowingAddNote = true
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "flag.fill")
                     .foregroundStyle(.yellow)
 
-                Text(reminderText)
+                Text(viewModel.reminderText(for: project))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(primaryText)
                     .lineLimit(1)
@@ -232,22 +209,6 @@ struct ReadingModeView: View {
             }
         }
         .buttonStyle(.plain)
-    }
-
-    private var reminderText: String {
-        if let note = currentRowNotes.first {
-            return "Row \(project.currentRow) - \(note.text)"
-        }
-        return "Row \(project.currentRow) - no reminders"
-    }
-
-    private var canIncreaseRow: Bool {
-        totalRows == 0 || project.currentRow < totalRows
-    }
-
-    private var canIncreaseRepeat: Bool {
-        guard let repeatTotal = project.repeatTotal else { return true }
-        return project.repeatCurrent < repeatTotal
     }
 
     private var readingBackground: Color {
@@ -277,80 +238,9 @@ struct ReadingModeView: View {
     private var stripBackground: Color {
         LoopLineTheme.readingStripFill
     }
-
-    private func selectRow(at index: Int) {
-        guard project.rows.indices.contains(index) else { return }
-        project.currentRow = index + 1
-        saveChanges()
-    }
-
-    private func incrementRow() {
-        guard canIncreaseRow else { return }
-        project.currentRow += 1
-        saveChanges()
-    }
-
-    private func decrementRow() {
-        guard project.currentRow > 1 else { return }
-        project.currentRow -= 1
-        saveChanges()
-    }
-
-    private func incrementRepeat() {
-        guard canIncreaseRepeat else { return }
-        project.repeatCurrent += 1
-        saveChanges()
-    }
-
-    private func decrementRepeat() {
-        guard project.repeatCurrent > 1 else { return }
-        project.repeatCurrent -= 1
-        saveChanges()
-    }
-
-    private func incrementStitch() {
-        project.currentStitch += 1
-        saveChanges()
-    }
-
-    private func decrementStitch() {
-        guard project.currentStitch > 1 else { return }
-        project.currentStitch -= 1
-        saveChanges()
-    }
-
-    private func resetCounters() {
-        project.currentRow = 1
-        project.repeatCurrent = 1
-        project.currentStitch = 1
-        saveChanges()
-    }
-
-    private func addNote(from draft: NoteDraft) {
-        let note = ProjectNote(
-            text: draft.trimmedText,
-            rowNumber: draft.rowNumber
-        )
-
-        modelContext.insert(note)
-        project.notes.append(note)
-        saveChanges()
-    }
-
-    private func saveChanges() {
-        try? modelContext.save()
-    }
-
-    private func scrollToActiveRow(with proxy: ScrollViewProxy) {
-        guard let activeRowIndex else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            proxy.scrollTo(activeRowIndex, anchor: .center)
-        }
-    }
 }
 
 private struct ReadingRow: View {
-
     let rowNumber: Int
     let text: String
     let isActive: Bool
@@ -403,7 +293,6 @@ private struct ReadingRow: View {
 }
 
 private struct CounterControlPanel: View {
-
     let label: String
     let value: String
     let detail: String?
