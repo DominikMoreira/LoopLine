@@ -142,17 +142,19 @@ private struct ProjectCard: View {
 
     private var progress: Double? {
         guard totalRows > 0 else { return nil }
-        let clampedRow = min(max(project.currentRow, 1), totalRows)
-        return Double(clampedRow) / Double(totalRows)
+        let maxRowIndex = totalRows - 1
+        let clampedRow = min(max(project.currentRow, 0), maxRowIndex)
+        guard maxRowIndex > 0 else { return 1 }
+        return Double(clampedRow) / Double(maxRowIndex)
     }
 
     private var rowSummary: String {
         if totalRows > 0 {
-            let clampedRow = min(max(project.currentRow, 1), totalRows)
+            let clampedRow = min(max(project.currentRow, 0), totalRows - 1)
             return "Row \(clampedRow)/\(totalRows)"
         }
 
-        return "Row \(max(project.currentRow, 1))"
+        return "Row \(max(project.currentRow, 0))"
     }
 
     var body: some View {
@@ -490,8 +492,8 @@ private struct SourceOptionRow: View {
         name: "Sample Scarf",
         subtitle: "Beginner garter stitch",
         sourceType: .text,
-        currentRow: 3,
-        repeatCurrent: 1,
+        currentRow: 2,
+        repeatCurrent: 0,
         repeatTotal: 4,
         rows: ["Cast on", "Knit", "Bind off"]
     ))
