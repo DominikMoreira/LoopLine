@@ -1,3 +1,4 @@
+import Observation
 import PDFKit
 import PencilKit
 import SwiftData
@@ -6,22 +7,13 @@ import SwiftUI
 struct PDFReadingView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
-
-    @State private var selectedMetric: ReadingTrackingMetric = .row
-    @State private var isMarkupActive = false
-    @State private var markupError: PDFMarkupError?
-
-    private var pdfURL: URL? {
-        guard project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath else {
-            return nil
-        }
-
-        return ImportedPDFStorage.fileURL(for: sourceFilePath)
-    }
+    @State private var viewModel = PDFReadingViewModel()
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         Group {
-            if let pdfURL {
+            if let pdfURL = viewModel.pdfURL(for: project) {
                 VStack(spacing: 0) {
                     trackingControls
                         .padding(.horizontal, 16)
@@ -30,18 +22,18 @@ struct PDFReadingView: View {
 
                     PDFKitView(
                         url: pdfURL,
-                        isMarkupActive: isMarkupActive,
-                        markupError: $markupError
+                        isMarkupActive: viewModel.isMarkupActive,
+                        markupError: $viewModel.markupError
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(isMarkupActive ? .yellow.opacity(0.75) : LoopLineTheme.readingStroke, lineWidth: isMarkupActive ? 2 : 1)
+                            .stroke(viewModel.isMarkupActive ? .yellow.opacity(0.75) : LoopLineTheme.readingStroke, lineWidth: viewModel.isMarkupActive ? 2 : 1)
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
 
-                    Text(markupHintText)
+                    Text(viewModel.markupHintText)
                         .font(.caption.monospaced())
                         .foregroundStyle(LoopLineTheme.readingSecondaryText)
                         .padding(.horizontal, 14)
@@ -73,20 +65,22 @@ struct PDFReadingView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             Button {
-                isMarkupActive.toggle()
+                viewModel.isMarkupActive.toggle()
             } label: {
-                Label("Markup", systemImage: isMarkupActive ? "pencil.tip.crop.circle.fill" : "pencil.tip.crop.circle")
+                Label("Markup", systemImage: viewModel.isMarkupActive ? "pencil.tip.crop.circle.fill" : "pencil.tip.crop.circle")
             }
-            .accessibilityLabel(isMarkupActive ? "Turn Markup Off" : "Turn Markup On")
+            .accessibilityLabel(viewModel.isMarkupActive ? "Turn Markup Off" : "Turn Markup On")
         }
-        .alert(item: $markupError) { error in
+        .alert(item: $viewModel.markupError) { error in
             Alert(
                 title: Text("Markup Not Saved"),
                 message: Text(error.message),
                 dismissButton: .default(Text("OK"))
             )
         }
-        .onAppear(perform: normalizeTrackingValues)
+        .onAppear {
+            viewModel.normalizeTrackingValues(for: project, in: modelContext)
+        }
     }
 
     private var trackingControls: some View {
@@ -94,12 +88,12 @@ struct PDFReadingView: View {
             Menu {
                 ForEach(ReadingTrackingMetric.allCases) { metric in
                     Button(metric.title) {
-                        selectedMetric = metric
+                        viewModel.selectedMetric = metric
                     }
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Text(selectedMetric.title)
+                    Text(viewModel.selectedMetric.title)
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
 
@@ -113,11 +107,13 @@ struct PDFReadingView: View {
                 .background(LoopLineTheme.readingControlFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .accessibilityLabel("Tracking metric")
-            .accessibilityValue(selectedMetric.title)
+            .accessibilityValue(viewModel.selectedMetric.title)
 
             Spacer(minLength: 0)
 
-            Button(action: decrementSelectedMetric) {
+            Button {
+                viewModel.decrementSelectedMetric(for: project, in: modelContext)
+            } label: {
                 Image(systemName: "minus")
             }
             .buttonStyle(LoopLineIconButtonStyle(
@@ -125,19 +121,21 @@ struct PDFReadingView: View {
                 foregroundColor: LoopLineTheme.readingPrimaryText,
                 backgroundColor: LoopLineTheme.readingControlFill
             ))
-            .disabled(!canDecreaseSelectedMetric)
-            .opacity(canDecreaseSelectedMetric ? 1 : 0.38)
-            .accessibilityLabel("Decrease \(selectedMetric.title)")
+            .disabled(!viewModel.canDecreaseSelectedMetric(for: project))
+            .opacity(viewModel.canDecreaseSelectedMetric(for: project) ? 1 : 0.38)
+            .accessibilityLabel("Decrease \(viewModel.selectedMetric.title)")
 
-            Text(String(selectedMetricValue))
+            Text(String(viewModel.selectedMetricValue(for: project)))
                 .font(.system(size: 34, weight: .bold).monospacedDigit())
                 .foregroundStyle(LoopLineTheme.readingPrimaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
                 .frame(minWidth: 70)
-                .accessibilityLabel("\(selectedMetric.title) \(selectedMetricValue)")
+                .accessibilityLabel("\(viewModel.selectedMetric.title) \(viewModel.selectedMetricValue(for: project))")
 
-            Button(action: incrementSelectedMetric) {
+            Button {
+                viewModel.incrementSelectedMetric(for: project, in: modelContext)
+            } label: {
                 Image(systemName: "plus")
             }
             .buttonStyle(LoopLineIconButtonStyle(
@@ -145,7 +143,7 @@ struct PDFReadingView: View {
                 foregroundColor: LoopLineTheme.primaryActionForeground,
                 backgroundColor: LoopLineTheme.primaryActionBackground
             ))
-            .accessibilityLabel("Increase \(selectedMetric.title)")
+            .accessibilityLabel("Increase \(viewModel.selectedMetric.title)")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -155,78 +153,6 @@ struct PDFReadingView: View {
                 .stroke(LoopLineTheme.readingStroke, lineWidth: 1)
         }
     }
-
-    private var selectedMetricValue: Int {
-        switch selectedMetric {
-        case .row:
-            max(project.currentRow, 0)
-        case .stitches:
-            max(project.currentStitch, 0)
-        case .repeatCount:
-            max(project.repeatCurrent, 0)
-        }
-    }
-
-    private var canDecreaseSelectedMetric: Bool {
-        selectedMetricValue > 0
-    }
-
-    private func incrementSelectedMetric() {
-        switch selectedMetric {
-        case .row:
-            project.currentRow += 1
-        case .stitches:
-            project.currentStitch += 1
-        case .repeatCount:
-            project.repeatCurrent += 1
-        }
-
-        saveChanges()
-    }
-
-    private func decrementSelectedMetric() {
-        guard canDecreaseSelectedMetric else { return }
-
-        switch selectedMetric {
-        case .row:
-            project.currentRow = max(project.currentRow - 1, 0)
-        case .stitches:
-            project.currentStitch = max(project.currentStitch - 1, 0)
-        case .repeatCount:
-            project.repeatCurrent = max(project.repeatCurrent - 1, 0)
-        }
-
-        saveChanges()
-    }
-
-    private func normalizeTrackingValues() {
-        let normalizedRow = max(project.currentRow, 0)
-        let normalizedStitch = max(project.currentStitch, 0)
-        let normalizedRepeat = max(project.repeatCurrent, 0)
-        guard normalizedRow != project.currentRow || normalizedStitch != project.currentStitch || normalizedRepeat != project.repeatCurrent else {
-            return
-        }
-
-        project.currentRow = normalizedRow
-        project.currentStitch = normalizedStitch
-        project.repeatCurrent = normalizedRepeat
-        saveChanges()
-    }
-
-    private func saveChanges() {
-        try? modelContext.save()
-    }
-
-    private var markupHintText: String {
-        isMarkupActive
-        ? "Choose a tool from the palette, then draw with finger or Apple Pencil"
-        : "Pinch to zoom - drag to pan"
-    }
-}
-
-private struct PDFMarkupError: Identifiable {
-    let id = UUID()
-    let message: String
 }
 
 private final class PDFMarkupPDFView: PDFView {
@@ -701,124 +627,6 @@ private final class PDFMarkupAnnotation: PDFAnnotation {
     }
 }
 
-private struct PDFMarkupStorage {
-    let pdfURL: URL
-
-    private var fileURL: URL {
-        pdfURL
-            .deletingPathExtension()
-            .appendingPathExtension("loopline-markups.json")
-    }
-
-    func load() throws -> [PDFMarkupStroke] {
-        guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            return []
-        }
-
-        let data = try Data(contentsOf: fileURL)
-        return try JSONDecoder().decode([PDFMarkupStroke].self, from: data)
-    }
-
-    func save(_ strokes: [PDFMarkupStroke]) throws {
-        let data = try JSONEncoder().encode(strokes)
-        try data.write(to: fileURL, options: [.atomic])
-    }
-}
-
-private struct PDFMarkupStroke: Codable, Identifiable {
-    var id = UUID()
-    var pageIndex: Int
-    var points: [PDFMarkupPoint]
-    var color: PDFMarkupColor
-    var width: Double
-    var isMarker: Bool
-
-    func contains(_ point: CGPoint, within distance: CGFloat) -> Bool {
-        guard !points.isEmpty else { return false }
-
-        let cgPoints = points.map(\.cgPoint)
-        if cgPoints.contains(where: { hypot($0.x - point.x, $0.y - point.y) <= distance }) {
-            return true
-        }
-
-        guard cgPoints.count > 1 else { return false }
-        for index in 1..<cgPoints.count {
-            if point.distance(toSegmentFrom: cgPoints[index - 1], to: cgPoints[index]) <= distance {
-                return true
-            }
-        }
-
-        return false
-    }
-}
-
-private struct PDFMarkupPoint: Codable {
-    var x: Double
-    var y: Double
-
-    init(_ point: CGPoint) {
-        x = Double(point.x)
-        y = Double(point.y)
-    }
-
-    var cgPoint: CGPoint {
-        CGPoint(x: x, y: y)
-    }
-}
-
-private struct PDFMarkupColor: Codable {
-    var red: Double
-    var green: Double
-    var blue: Double
-    var alpha: Double
-
-    init(_ color: UIColor) {
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-        var white: CGFloat = 0
-
-        if color.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
-            self.red = Double(red)
-            self.green = Double(green)
-            self.blue = Double(blue)
-            self.alpha = Double(alpha)
-        } else if color.getWhite(&white, alpha: &alpha) {
-            self.red = Double(white)
-            self.green = Double(white)
-            self.blue = Double(white)
-            self.alpha = Double(alpha)
-        } else {
-            self.red = 1
-            self.green = 0.8
-            self.blue = 0
-            self.alpha = 0.38
-        }
-    }
-
-    var uiColor: UIColor {
-        UIColor(red: red, green: green, blue: blue, alpha: alpha)
-    }
-}
-
-private extension CGPoint {
-    func distance(toSegmentFrom start: CGPoint, to end: CGPoint) -> CGFloat {
-        let dx = end.x - start.x
-        let dy = end.y - start.y
-        guard dx != 0 || dy != 0 else {
-            return hypot(x - start.x, y - start.y)
-        }
-
-        let projection = ((x - start.x) * dx + (y - start.y) * dy) / (dx * dx + dy * dy)
-        let clampedProjection = min(max(projection, 0), 1)
-        let closestPoint = CGPoint(
-            x: start.x + clampedProjection * dx,
-            y: start.y + clampedProjection * dy
-        )
-        return hypot(x - closestPoint.x, y - closestPoint.y)
-    }
-}
 
 #Preview("PDF Missing") {
     NavigationStack {

@@ -1,35 +1,34 @@
+import Observation
 import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var settings: [AppSettings]
+    @State private var viewModel = SettingsViewModel()
 
     var body: some View {
         NavigationStack {
             Group {
                 if let appSettings = settings.first {
-                    SettingsForm(settings: appSettings)
+                    SettingsForm(settings: appSettings, viewModel: viewModel)
                 } else {
                     ProgressView()
-                        .onAppear(perform: ensureSettings)
+                        .onAppear {
+                            viewModel.ensureSettings(settings, in: modelContext)
+                        }
                 }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
         }
     }
-
-    private func ensureSettings() {
-        guard settings.isEmpty else { return }
-        modelContext.insert(AppSettings())
-        try? modelContext.save()
-    }
 }
 
 private struct SettingsForm: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var settings: AppSettings
+    let viewModel: SettingsViewModel
 
     var body: some View {
         ScrollView {
@@ -54,7 +53,9 @@ private struct SettingsForm: View {
                     subtitle: "Bigger row counter buttons",
                     isOn: $settings.largeControls
                 )
-                .onChange(of: settings.largeControls) { _, _ in saveSettings() }
+                .onChange(of: settings.largeControls) { _, _ in
+                    viewModel.saveSettings(in: modelContext)
+                }
 
                 Divider()
                     .padding(.leading, 16)
@@ -78,7 +79,7 @@ private struct SettingsForm: View {
 
                     Slider(value: $settings.guideOpacity, in: 0.2...1.0) { isEditing in
                         if !isEditing {
-                            saveSettings()
+                            viewModel.saveSettings(in: modelContext)
                         }
                     }
                     .tint(LoopLineTheme.primaryActionBackground)
@@ -108,7 +109,7 @@ private struct SettingsForm: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("LoopLine")
                     .font(.headline)
-                Text("Version \(appVersion)")
+                Text("Version \(viewModel.appVersion)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -120,24 +121,6 @@ private struct SettingsForm: View {
                     .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
             }
         }
-    }
-
-    private var appVersion: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-
-        switch (version, build) {
-        case let (version?, build?) where !version.isEmpty && !build.isEmpty:
-            return "\(version) (\(build))"
-        case let (version?, _) where !version.isEmpty:
-            return version
-        default:
-            return "Unknown"
-        }
-    }
-
-    private func saveSettings() {
-        try? modelContext.save()
     }
 }
 

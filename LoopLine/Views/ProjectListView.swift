@@ -1,4 +1,4 @@
-import Foundation
+import Observation
 import PhotosUI
 import SwiftData
 import SwiftUI
@@ -7,10 +7,11 @@ import UniformTypeIdentifiers
 struct ProjectListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Project.name) private var projects: [Project]
-    @State private var isShowingCreateProject = false
-    @State private var projectPendingDeletion: Project?
+    @State private var viewModel = ProjectListViewModel()
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         NavigationStack {
             VStack(spacing: 0) {
                 header
@@ -24,21 +25,20 @@ struct ProjectListView: View {
             .background(LoopLineTheme.appBackground)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $isShowingCreateProject) {
+            .sheet(isPresented: $viewModel.isShowingCreateProject) {
                 CreateProjectView { draft in
-                    createProject(from: draft)
-                    isShowingCreateProject = false
+                    viewModel.createProject(from: draft, in: modelContext)
                 }
             }
-            .alert("Delete Project?", isPresented: deleteConfirmationBinding) {
+            .alert("Delete Project?", isPresented: $viewModel.isShowingDeleteConfirmation) {
                 Button("Delete Project", role: .destructive) {
-                    confirmProjectDeletion()
+                    viewModel.confirmProjectDeletion(in: modelContext)
                 }
                 Button("Cancel", role: .cancel) {
-                    projectPendingDeletion = nil
+                    viewModel.projectPendingDeletion = nil
                 }
             } message: {
-                Text(deleteConfirmationMessage)
+                Text(viewModel.deleteConfirmationMessage)
             }
         }
     }
@@ -52,7 +52,7 @@ struct ProjectListView: View {
             Spacer()
 
             Button {
-                isShowingCreateProject = true
+                viewModel.showCreateProject()
             } label: {
                 Label("New", systemImage: "plus")
                     .font(.headline)
@@ -98,7 +98,7 @@ struct ProjectListView: View {
             }
 
             Button {
-                isShowingCreateProject = true
+                viewModel.showCreateProject()
             } label: {
                 Label("Create first project", systemImage: "plus")
                     .labelStyle(.titleAndIcon)
@@ -110,25 +110,6 @@ struct ProjectListView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var deleteConfirmationBinding: Binding<Bool> {
-        Binding(
-            get: { projectPendingDeletion != nil },
-            set: { isPresented in
-                if !isPresented {
-                    projectPendingDeletion = nil
-                }
-            }
-        )
-    }
-
-    private var deleteConfirmationMessage: String {
-        guard let projectPendingDeletion else {
-            return "This will permanently delete this project and its notes. This cannot be undone."
-        }
-
-        return "This will permanently delete \(projectPendingDeletion.name) and its notes. This cannot be undone."
     }
 
     private var projectList: some View {
@@ -143,63 +124,12 @@ struct ProjectListView: View {
             .listRowBackground(LoopLineTheme.appBackground)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button("Delete Project", role: .destructive) {
-                    projectPendingDeletion = project
+                    viewModel.requestDeletion(for: project)
                 }
             }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-    }
-
-    private func createProject(from draft: NewProjectDraft) {
-        let trimmedName = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedSubtitle = draft.subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedSourceText = draft.sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let project = Project(
-            name: trimmedName,
-            subtitle: trimmedSubtitle.isEmpty ? nil : trimmedSubtitle,
-            sourceType: draft.sourceType,
-            currentRow: 1,
-            repeatCurrent: 1,
-            currentStitch: 1,
-            repeatTotal: nil,
-            rows: draft.sourceType == .text ? draft.rows : [],
-            sourceText: draft.sourceType == .text && !trimmedSourceText.isEmpty ? trimmedSourceText : nil,
-            sourceFilePath: sourceFilePath(from: draft),
-            notes: []
-        )
-
-        modelContext.insert(project)
-        try? modelContext.save()
-    }
-
-    private func sourceFilePath(from draft: NewProjectDraft) -> String? {
-        switch draft.sourceType {
-        case .pdf:
-            draft.sourceFilePath
-        case .image:
-            draft.imageFilePath
-        case .text:
-            nil
-        }
-    }
-
-    private func confirmProjectDeletion() {
-        guard let project = projectPendingDeletion else { return }
-        projectPendingDeletion = nil
-        deleteProject(project)
-    }
-
-    private func deleteProject(_ project: Project) {
-        if project.sourceType == .pdf {
-            ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
-        } else if project.sourceType == .image {
-            ImportedImageStorage.delete(storedReference: project.sourceFilePath)
-        }
-
-        modelContext.delete(project)
-        try? modelContext.save()
     }
 }
 
@@ -274,82 +204,15 @@ private struct ProjectCard: View {
     }
 }
 
-private struct NewProjectDraft {
-    var name = ""
-    var subtitle = ""
-    var sourceType: ImportSource = .text
-    var sourceText = ""
-    var sourceFilePath: String?
-    var sourceFileName: String?
-    var imageFilePath: String?
-    var imageFileName: String?
-    var rows: [String] = []
-
-    var trimmedSourceText: String {
-        sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var isValid: Bool {
-        let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return hasName && hasRequiredSource
-    }
-
-    private var hasRequiredSource: Bool {
-        switch sourceType {
-        case .text:
-            !trimmedSourceText.isEmpty
-        case .pdf:
-            sourceFilePath != nil
-        case .image:
-            imageFilePath != nil
-        }
-    }
-
-    mutating func setPastedText(_ text: String) {
-        sourceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        rows = PatternTextNormalizer.rows(from: sourceText)
-    }
-
-    mutating func clearPastedText() {
-        sourceText = ""
-        rows = []
-    }
-
-    mutating func setPDF(path: String, fileName: String) {
-        sourceFilePath = path
-        sourceFileName = fileName
-    }
-
-    mutating func clearPDF() {
-        sourceFilePath = nil
-        sourceFileName = nil
-    }
-
-    mutating func setImage(path: String, fileName: String) {
-        imageFilePath = path
-        imageFileName = fileName
-    }
-
-    mutating func clearImage() {
-        imageFilePath = nil
-        imageFileName = nil
-    }
-}
-
 private struct CreateProjectView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var draft = NewProjectDraft()
-    @State private var isShowingTextImport = false
-    @State private var isShowingPDFImporter = false
-    @State private var selectedImageItem: PhotosPickerItem?
-    @State private var pdfImportError: String?
-    @State private var imageImportError: String?
-    @State private var isImportingImage = false
-    @State private var didCreateProject = false
+    @State private var viewModel = CreateProjectViewModel()
 
     let onCreate: (NewProjectDraft) -> Void
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
@@ -368,53 +231,52 @@ private struct CreateProjectView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        cleanupDraftFiles()
+                        viewModel.cleanupDraftFiles()
                         dismiss()
                     }
                 }
             }
             .safeAreaInset(edge: .bottom) {
                 Button {
-                    didCreateProject = true
-                    onCreate(draft)
+                    viewModel.markCreated()
+                    onCreate(viewModel.draft)
                 } label: {
                     Text("Create Project")
                 }
                 .buttonStyle(LoopLinePrimaryButtonStyle())
-                .disabled(!draft.isValid || isImportingImage)
-                .opacity((draft.isValid && !isImportingImage) ? 1 : 0.45)
+                .disabled(!viewModel.canCreateProject)
+                .opacity(viewModel.canCreateProject ? 1 : 0.45)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
                 .padding(.bottom, 12)
                 .background(.regularMaterial)
             }
-            .sheet(isPresented: $isShowingTextImport) {
-                PastedTextImportView(initialText: draft.sourceText) { text in
-                    draft.setPastedText(text)
-                    isShowingTextImport = false
+            .sheet(isPresented: $viewModel.isShowingTextImport) {
+                PastedTextImportView(initialText: viewModel.draft.sourceText) { text in
+                    viewModel.setPastedText(text)
                 }
             }
             .fileImporter(
-                isPresented: $isShowingPDFImporter,
+                isPresented: $viewModel.isShowingPDFImporter,
                 allowedContentTypes: [.pdf]
             ) { result in
-                importPDF(from: result)
+                viewModel.importPDF(from: result)
             }
-            .onChange(of: selectedImageItem) { _, newItem in
-                importImage(from: newItem)
+            .onChange(of: viewModel.selectedImageItem) { _, newItem in
+                viewModel.importImage(from: newItem)
             }
             .onDisappear {
-                if !didCreateProject {
-                    cleanupDraftFiles()
-                }
+                viewModel.cleanupDraftFilesIfNeeded()
             }
         }
     }
 
     private var projectInfoSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        @Bindable var viewModel = viewModel
+
+        return VStack(alignment: .leading, spacing: 16) {
             LoopLineFieldLabel(text: "Project name")
-            TextField("Aran Cable Sweater", text: $draft.name)
+            TextField("Aran Cable Sweater", text: $viewModel.draft.name)
                 .font(.title3)
                 .textFieldStyle(.plain)
                 .padding(18)
@@ -425,7 +287,7 @@ private struct CreateProjectView: View {
                 }
 
             LoopLineFieldLabel(text: "Subtitle")
-            TextField("Size, yarn, or recipient", text: $draft.subtitle)
+            TextField("Size, yarn, or recipient", text: $viewModel.draft.subtitle)
                 .font(.body)
                 .textFieldStyle(.plain)
                 .padding(16)
@@ -452,12 +314,11 @@ private struct CreateProjectView: View {
 
             ForEach(ImportSource.allCases, id: \.self) { sourceType in
                 Button {
-                    draft.sourceType = sourceType
-                    handleSourceTypeChange(sourceType)
+                    viewModel.selectSourceType(sourceType)
                 } label: {
                     SourceOptionRow(
                         sourceType: sourceType,
-                        isSelected: draft.sourceType == sourceType
+                        isSelected: viewModel.draft.sourceType == sourceType
                     )
                 }
                 .buttonStyle(.plain)
@@ -467,62 +328,68 @@ private struct CreateProjectView: View {
 
     @ViewBuilder
     private var selectedSourceSection: some View {
-        switch draft.sourceType {
+        @Bindable var viewModel = viewModel
+
+        switch viewModel.draft.sourceType {
         case .text:
             VStack(alignment: .leading, spacing: 12) {
-                Button(draft.trimmedSourceText.isEmpty ? "Enter Pasted Text" : "Edit Pasted Text") {
-                    isShowingTextImport = true
+                Button(viewModel.draft.trimmedSourceText.isEmpty ? "Enter Pasted Text" : "Edit Pasted Text") {
+                    viewModel.isShowingTextImport = true
                 }
                 .buttonStyle(LoopLineSecondaryButtonStyle())
 
-                Text(draft.rows.isEmpty ? "Pattern text is required for pasted text projects." : "\(draft.rows.count) rows ready to import")
+                Text(viewModel.draft.rows.isEmpty ? "Pattern text is required for pasted text projects." : "\(viewModel.draft.rows.count) rows ready to import")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case .pdf:
             VStack(alignment: .leading, spacing: 12) {
-                Button(draft.sourceFileName == nil ? "Choose PDF" : "Choose Different PDF") {
-                    pdfImportError = nil
-                    isShowingPDFImporter = true
+                Button(viewModel.draft.sourceFileName == nil ? "Choose PDF" : "Choose Different PDF") {
+                    viewModel.showPDFImporter()
                 }
                 .buttonStyle(LoopLineSecondaryButtonStyle())
 
                 sourceStatus(
-                    fileName: draft.sourceFileName,
+                    fileName: viewModel.draft.sourceFileName,
                     emptyText: "A PDF is required for PDF projects.",
-                    errorText: pdfImportError,
+                    errorText: viewModel.pdfImportError,
                     iconName: "doc.richtext"
                 )
             }
         case .image:
+            let imageButtonTitle = viewModel.draft.imageFileName == nil ? "Choose Image" : "Choose Different Image"
+
             VStack(alignment: .leading, spacing: 12) {
                 PhotosPicker(
-                    selection: $selectedImageItem,
+                    selection: Binding(
+                        get: { viewModel.selectedImageItem },
+                        set: { viewModel.selectedImageItem = $0 }
+                    ),
                     matching: .images
                 ) {
-                    Text(draft.imageFileName == nil ? "Choose Image" : "Choose Different Image")
+                    Text(imageButtonTitle)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(LoopLineSecondaryButtonStyle())
-                .disabled(isImportingImage)
+                .disabled(viewModel.isImportingImage)
 
-                if isImportingImage {
+                if viewModel.isImportingImage {
                     ProgressView("Importing image...")
-                } else if let imageFilePath = draft.imageFilePath {
+                } else if let imageFilePath = viewModel.draft.imageFilePath {
                     StoredImagePreview(storedReference: imageFilePath, height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                     sourceStatus(
-                        fileName: draft.imageFileName,
+                        fileName: viewModel.draft.imageFileName,
                         emptyText: "An image is required for image projects.",
-                        errorText: imageImportError,
+                        errorText: viewModel.imageImportError,
                         iconName: "photo"
                     )
                 } else {
                     sourceStatus(
                         fileName: nil,
                         emptyText: "An image is required for image projects.",
-                        errorText: imageImportError,
+                        errorText: viewModel.imageImportError,
                         iconName: "photo"
                     )
                 }
@@ -549,81 +416,6 @@ private struct CreateProjectView: View {
                     .foregroundStyle(.red)
             }
         }
-    }
-
-    private func importPDF(from result: Result<URL, Error>) {
-        do {
-            let sourceURL = try result.get()
-            let localURL = try ImportedPDFStorage.copyIntoStorage(from: sourceURL)
-            ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
-            draft.setPDF(path: localURL.lastPathComponent, fileName: sourceURL.lastPathComponent)
-            pdfImportError = nil
-        } catch {
-            pdfImportError = "Could not import the selected PDF."
-        }
-    }
-
-    private func importImage(from item: PhotosPickerItem?) {
-        guard let item else { return }
-
-        isImportingImage = true
-        imageImportError = nil
-
-        Task {
-            do {
-                guard let data = try await item.loadTransferable(type: Data.self) else {
-                    throw CocoaError(.fileReadCorruptFile)
-                }
-
-                let localURL = try ImportedImageStorage.saveImageData(data)
-                await MainActor.run {
-                    guard draft.sourceType == .image else {
-                        ImportedImageStorage.delete(storedReference: localURL.lastPathComponent)
-                        selectedImageItem = nil
-                        isImportingImage = false
-                        return
-                    }
-
-                    ImportedImageStorage.delete(storedReference: draft.imageFilePath)
-                    draft.setImage(path: localURL.lastPathComponent, fileName: localURL.lastPathComponent)
-                    selectedImageItem = nil
-                    isImportingImage = false
-                }
-            } catch {
-                await MainActor.run {
-                    imageImportError = "Could not import the selected image."
-                    selectedImageItem = nil
-                    isImportingImage = false
-                }
-            }
-        }
-    }
-
-    private func handleSourceTypeChange(_ sourceType: ImportSource) {
-        if sourceType != .text {
-            draft.clearPastedText()
-            isShowingTextImport = false
-        }
-
-        if sourceType != .pdf {
-            ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
-            draft.clearPDF()
-            isShowingPDFImporter = false
-            pdfImportError = nil
-        }
-
-        if sourceType != .image {
-            ImportedImageStorage.delete(storedReference: draft.imageFilePath)
-            draft.clearImage()
-            selectedImageItem = nil
-            imageImportError = nil
-            isImportingImage = false
-        }
-    }
-
-    private func cleanupDraftFiles() {
-        ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
-        ImportedImageStorage.delete(storedReference: draft.imageFilePath)
     }
 }
 

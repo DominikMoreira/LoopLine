@@ -1,3 +1,4 @@
+import Observation
 import SwiftData
 import SwiftUI
 
@@ -5,22 +6,11 @@ struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var project: Project
-    @State private var isShowingAddNote = false
-    @State private var isShowingDeleteConfirmation = false
-    @State private var isShowingEditProject = false
-    @State private var isShowingTextImport = false
-
-    private var totalRows: Int {
-        project.rows.count
-    }
-
-    private var progress: Double? {
-        guard totalRows > 0 else { return nil }
-        let clampedRow = min(max(project.currentRow, 1), totalRows)
-        return Double(clampedRow) / Double(totalRows)
-    }
+    @State private var viewModel = ProjectDetailViewModel()
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 mediaHeader
@@ -41,32 +31,31 @@ struct ProjectDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             Button("Edit") {
-                isShowingEditProject = true
+                viewModel.isShowingEditProject = true
             }
         }
-        .sheet(isPresented: $isShowingAddNote) {
+        .sheet(isPresented: $viewModel.isShowingAddNote) {
             AddNoteView(currentRow: project.currentRow) { draft in
-                addNote(from: draft)
-                isShowingAddNote = false
+                viewModel.addNote(from: draft, to: project, in: modelContext)
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
         }
-        .alert("Delete Project?", isPresented: $isShowingDeleteConfirmation) {
+        .alert("Delete Project?", isPresented: $viewModel.isShowingDeleteConfirmation) {
             Button("Delete Project", role: .destructive) {
-                deleteProject()
+                viewModel.deleteProject(project, in: modelContext)
+                dismiss()
             }
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This will permanently delete \(project.name) and its notes. This cannot be undone.")
         }
-        .sheet(isPresented: $isShowingEditProject) {
+        .sheet(isPresented: $viewModel.isShowingEditProject) {
             EditProjectView(project: project)
         }
-        .sheet(isPresented: $isShowingTextImport) {
+        .sheet(isPresented: $viewModel.isShowingTextImport) {
             PastedTextImportView(initialText: project.sourceText ?? "") { text in
-                importPastedText(text)
-                isShowingTextImport = false
+                viewModel.importPastedText(text, into: project, in: modelContext)
             }
         }
     }
@@ -110,7 +99,7 @@ struct ProjectDetailView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 } else {
-                    Text(sourceMetaText)
+                    Text(viewModel.sourceMetaText(for: project))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -123,11 +112,11 @@ struct ProjectDetailView: View {
         HStack(spacing: 0) {
             LoopLineStatTile(value: String(project.currentRow), label: "Current Row")
             Divider()
-            LoopLineStatTile(value: repeatDisplayText, label: "Repeat")
+            LoopLineStatTile(value: viewModel.repeatDisplayText(for: project), label: "Repeat")
             Divider()
             LoopLineStatTile(value: String(project.currentStitch), label: "Stitches")
             Divider()
-            LoopLineStatTile(value: progressText, label: "Progress")
+            LoopLineStatTile(value: viewModel.progressText(for: project), label: "Progress")
         }
         .frame(maxWidth: .infinity)
         .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -148,7 +137,7 @@ struct ProjectDetailView: View {
 
             if project.sourceType == .text {
                 Button("Import Pasted Text") {
-                    isShowingTextImport = true
+                    viewModel.isShowingTextImport = true
                 }
                 .buttonStyle(LoopLineSecondaryButtonStyle())
             }
@@ -170,7 +159,7 @@ struct ProjectDetailView: View {
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             LoopLineSectionHeader(title: "Notes & Reminders", actionTitle: "+ Add") {
-                isShowingAddNote = true
+                viewModel.isShowingAddNote = true
             }
 
             if project.notes.isEmpty {
@@ -198,23 +187,23 @@ struct ProjectDetailView: View {
                 CounterControlRow(
                     title: "Current Row",
                     value: String(project.currentRow),
-                    detail: totalRows > 0 ? "of \(totalRows) rows" : nil,
+                    detail: viewModel.rowDetailText(for: project),
                     canDecrease: project.currentRow > 1,
-                    canIncrease: canIncreaseRow,
-                    decreaseAction: decrementRow,
-                    increaseAction: incrementRow
+                    canIncrease: viewModel.canIncreaseRow(for: project),
+                    decreaseAction: { viewModel.decrementRow(for: project, in: modelContext) },
+                    increaseAction: { viewModel.incrementRow(for: project, in: modelContext) }
                 )
 
                 Divider()
 
                 CounterControlRow(
                     title: "Repeat",
-                    value: repeatDisplayText,
+                    value: viewModel.repeatDisplayText(for: project),
                     detail: nil,
                     canDecrease: project.repeatCurrent > 1,
-                    canIncrease: canIncreaseRepeat,
-                    decreaseAction: decrementRepeat,
-                    increaseAction: incrementRepeat
+                    canIncrease: viewModel.canIncreaseRepeat(for: project),
+                    decreaseAction: { viewModel.decrementRepeat(for: project, in: modelContext) },
+                    increaseAction: { viewModel.incrementRepeat(for: project, in: modelContext) }
                 )
 
                 Divider()
@@ -225,8 +214,8 @@ struct ProjectDetailView: View {
                     detail: nil,
                     canDecrease: project.currentStitch > 1,
                     canIncrease: true,
-                    decreaseAction: decrementStitch,
-                    increaseAction: incrementStitch
+                    decreaseAction: { viewModel.decrementStitch(for: project, in: modelContext) },
+                    increaseAction: { viewModel.incrementStitch(for: project, in: modelContext) }
                 )
             }
             .padding(.horizontal, 16)
@@ -259,149 +248,15 @@ struct ProjectDetailView: View {
     private var secondaryActions: some View {
         HStack(spacing: 16) {
             Button("Edit Project") {
-                isShowingEditProject = true
+                viewModel.isShowingEditProject = true
             }
             .buttonStyle(LoopLineSecondaryButtonStyle())
 
             Button("Delete") {
-                isShowingDeleteConfirmation = true
+                viewModel.isShowingDeleteConfirmation = true
             }
             .buttonStyle(LoopLineSecondaryButtonStyle(tint: .red))
         }
-    }
-
-    private var sourceMetaText: String {
-        if let detailMeta = project.detailMeta, !detailMeta.isEmpty {
-            return detailMeta
-        }
-
-        return totalRows > 0 ? "\(totalRows) rows" : project.sourceType.displayName
-    }
-
-    private var progressText: String {
-        guard let progress else { return "--" }
-        return progress.formatted(.percent.precision(.fractionLength(0)))
-    }
-
-    private var repeatDisplayText: String {
-        if let repeatTotal = project.repeatTotal {
-            "\(project.repeatCurrent) of \(repeatTotal)"
-        } else {
-            String(project.repeatCurrent)
-        }
-    }
-
-    private var canIncreaseRow: Bool {
-        totalRows == 0 || project.currentRow < totalRows
-    }
-
-    private var canIncreaseRepeat: Bool {
-        guard let repeatTotal = project.repeatTotal else { return true }
-        return project.repeatCurrent < repeatTotal
-    }
-
-    private func incrementRow() {
-        guard canIncreaseRow else { return }
-        project.currentRow += 1
-        saveChanges()
-    }
-
-    private func decrementRow() {
-        guard project.currentRow > 1 else { return }
-        project.currentRow -= 1
-        saveChanges()
-    }
-
-    private func incrementRepeat() {
-        guard canIncreaseRepeat else { return }
-        project.repeatCurrent += 1
-        saveChanges()
-    }
-
-    private func decrementRepeat() {
-        guard project.repeatCurrent > 1 else { return }
-        project.repeatCurrent -= 1
-        saveChanges()
-    }
-
-    private func incrementStitch() {
-        project.currentStitch += 1
-        saveChanges()
-    }
-
-    private func decrementStitch() {
-        guard project.currentStitch > 1 else { return }
-        project.currentStitch -= 1
-        saveChanges()
-    }
-
-    private func addNote(from draft: NoteDraft) {
-        let note = ProjectNote(
-            text: draft.trimmedText,
-            rowNumber: draft.rowNumber
-        )
-
-        modelContext.insert(note)
-        project.notes.append(note)
-        saveChanges()
-    }
-
-    private func deleteProject() {
-        if project.sourceType == .pdf {
-            ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
-        } else if project.sourceType == .image {
-            ImportedImageStorage.delete(storedReference: project.sourceFilePath)
-        }
-
-        modelContext.delete(project)
-        saveChanges()
-        dismiss()
-    }
-
-    private func importPastedText(_ text: String) {
-        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        project.sourceType = .text
-        project.sourceText = trimmedText
-        project.sourceFilePath = nil
-        project.coverImagePath = nil
-        project.rows = PatternTextNormalizer.rows(from: trimmedText)
-        project.currentRow = clampedCurrentRow()
-        saveChanges()
-    }
-
-    private func saveChanges() {
-        try? modelContext.save()
-    }
-
-    private func clampedCurrentRow() -> Int {
-        guard !project.rows.isEmpty else { return 1 }
-        return min(max(project.currentRow, 1), project.rows.count)
-    }
-}
-
-struct NoteDraft {
-    var text = ""
-    var rowNumberText = ""
-
-    var trimmedText: String {
-        text.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var rowNumber: Int? {
-        let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedRow.isEmpty, let rowNumber = Int(trimmedRow), rowNumber > 0 else {
-            return nil
-        }
-        return rowNumber
-    }
-
-    var isValid: Bool {
-        !trimmedText.isEmpty && hasValidRowNumber
-    }
-
-    private var hasValidRowNumber: Bool {
-        let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedRow.isEmpty || rowNumber != nil
     }
 }
 
@@ -478,51 +333,31 @@ struct PastedTextImportView: View {
     }
 }
 
-private struct EditProjectDraft {
-    var name: String
-    var subtitle: String
-
-    init(project: Project) {
-        name = project.name
-        subtitle = project.subtitle ?? ""
-    }
-
-    var trimmedName: String {
-        name.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var trimmedSubtitle: String {
-        subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var isValid: Bool {
-        !trimmedName.isEmpty
-    }
-}
-
 private struct EditProjectView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
-    @State private var draft: EditProjectDraft
+    @State private var viewModel: EditProjectViewModel
 
     init(project: Project) {
         self.project = project
-        _draft = State(initialValue: EditProjectDraft(project: project))
+        _viewModel = State(initialValue: EditProjectViewModel(project: project))
     }
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 LoopLineFieldLabel(text: "Project name")
-                TextField("Project name", text: $draft.name)
+                TextField("Project name", text: $viewModel.draft.name)
                     .font(.title3)
                     .textFieldStyle(.plain)
                     .padding(16)
                     .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 LoopLineFieldLabel(text: "Subtitle")
-                TextField("Subtitle", text: $draft.subtitle)
+                TextField("Subtitle", text: $viewModel.draft.subtitle)
                     .textFieldStyle(.plain)
                     .padding(16)
                     .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -543,7 +378,7 @@ private struct EditProjectView: View {
                     Button("Save") {
                         saveProject()
                     }
-                    .disabled(!draft.isValid)
+                    .disabled(!viewModel.draft.isValid)
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -551,8 +386,8 @@ private struct EditProjectView: View {
                     saveProject()
                 }
                 .buttonStyle(LoopLinePrimaryButtonStyle())
-                .disabled(!draft.isValid)
-                .opacity(draft.isValid ? 1 : 0.45)
+                .disabled(!viewModel.draft.isValid)
+                .opacity(viewModel.draft.isValid ? 1 : 0.45)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
                 .padding(.bottom, 12)
@@ -562,27 +397,25 @@ private struct EditProjectView: View {
     }
 
     private func saveProject() {
-        project.name = draft.trimmedName
-        project.subtitle = draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle
-        try? modelContext.save()
+        viewModel.saveProject(project, in: modelContext)
         dismiss()
     }
 }
 
 struct AddNoteView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var draft: NoteDraft
-    @State private var attachesToRow: Bool
+    @State private var viewModel: AddNoteViewModel
 
     let onSave: (NoteDraft) -> Void
 
     init(currentRow: Int, onSave: @escaping (NoteDraft) -> Void) {
-        _draft = State(initialValue: NoteDraft(text: "", rowNumberText: String(currentRow)))
-        _attachesToRow = State(initialValue: true)
+        _viewModel = State(initialValue: AddNoteViewModel(currentRow: currentRow))
         self.onSave = onSave
     }
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
@@ -593,7 +426,7 @@ struct AddNoteView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         LoopLineFieldLabel(text: "Note")
-                        TextField("Start decreases at the armhole.", text: $draft.text, axis: .vertical)
+                        TextField("Start decreases at the armhole.", text: $viewModel.draft.text, axis: .vertical)
                             .lineLimit(4...7)
                             .textFieldStyle(.plain)
                             .padding(16)
@@ -606,20 +439,21 @@ struct AddNoteView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Toggle("Attach to a specific row?", isOn: $attachesToRow)
-                            .font(.headline)
-                            .onChange(of: attachesToRow) { _, isAttached in
-                                if !isAttached {
-                                    draft.rowNumberText = ""
-                                }
-                            }
+                        Toggle(
+                            "Attach to a specific row?",
+                            isOn: Binding(
+                                get: { viewModel.attachesToRow },
+                                set: { viewModel.setAttachesToRow($0) }
+                            )
+                        )
+                        .font(.headline)
 
                         Text("Reminder will appear when you reach that row in reading mode.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
-                    if attachesToRow {
+                    if viewModel.attachesToRow {
                         rowNumberEditor
                     }
 
@@ -639,18 +473,18 @@ struct AddNoteView: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        onSave(draft)
+                        onSave(viewModel.draft)
                     }
-                    .disabled(!draft.isValid)
+                    .disabled(!viewModel.draft.isValid)
                 }
             }
             .safeAreaInset(edge: .bottom) {
                 Button("Save Note") {
-                    onSave(draft)
+                    onSave(viewModel.draft)
                 }
                 .buttonStyle(LoopLinePrimaryButtonStyle())
-                .disabled(!draft.isValid)
-                .opacity(draft.isValid ? 1 : 0.45)
+                .disabled(!viewModel.draft.isValid)
+                .opacity(viewModel.draft.isValid ? 1 : 0.45)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
                 .padding(.bottom, 12)
@@ -660,11 +494,13 @@ struct AddNoteView: View {
     }
 
     private var rowNumberEditor: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        @Bindable var viewModel = viewModel
+
+        return VStack(alignment: .leading, spacing: 12) {
             LoopLineFieldLabel(text: "Row number")
 
             HStack(spacing: 14) {
-                TextField("Row", text: $draft.rowNumberText)
+                TextField("Row", text: $viewModel.draft.rowNumberText)
                     .keyboardType(.numberPad)
                     .textFieldStyle(.plain)
                     .font(.title3.monospacedDigit())
@@ -677,14 +513,14 @@ struct AddNoteView: View {
 
                 VStack(spacing: 10) {
                     Button {
-                        adjustRow(by: 1)
+                        viewModel.adjustRow(by: 1)
                     } label: {
                         Image(systemName: "plus")
                     }
                     .buttonStyle(LoopLineIconButtonStyle(size: 50))
 
                     Button {
-                        adjustRow(by: -1)
+                        viewModel.adjustRow(by: -1)
                     } label: {
                         Image(systemName: "minus")
                     }
@@ -708,15 +544,15 @@ struct AddNoteView: View {
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    if let rowNumber = draft.rowNumber {
+                    if let rowNumber = viewModel.draft.rowNumber {
                         Text("Row \(rowNumber)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
-                    Text(draft.trimmedText.isEmpty ? "Your note preview will appear here." : draft.trimmedText)
+                    Text(viewModel.draft.trimmedText.isEmpty ? "Your note preview will appear here." : viewModel.draft.trimmedText)
                         .font(.body)
-                        .foregroundStyle(draft.trimmedText.isEmpty ? .secondary : .primary)
+                        .foregroundStyle(viewModel.draft.trimmedText.isEmpty ? .secondary : .primary)
                 }
 
                 Spacer()
@@ -724,11 +560,6 @@ struct AddNoteView: View {
             .padding(16)
             .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-    }
-
-    private func adjustRow(by offset: Int) {
-        let currentValue = draft.rowNumber ?? 1
-        draft.rowNumberText = String(max(1, currentValue + offset))
     }
 }
 
