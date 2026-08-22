@@ -191,7 +191,16 @@ private struct ProjectCard: View {
 
     @ViewBuilder
     private var thumbnail: some View {
-        if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+        if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
+            StoredPDFPreview(storedReference: sourceFilePath, height: 74)
+                .frame(width: 74, height: 74)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                }
+        } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
             StoredImagePreview(storedReference: sourceFilePath, height: 74)
                 .frame(width: 74, height: 74)
                 .clipped()
