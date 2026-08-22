@@ -12,7 +12,7 @@ struct NoteDraft {
 
     var rowNumber: Int? {
         let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedRow.isEmpty, let rowNumber = Int(trimmedRow), rowNumber > 0 else {
+        guard !trimmedRow.isEmpty, let rowNumber = Int(trimmedRow), rowNumber >= 0 else {
             return nil
         }
         return rowNumber
@@ -65,8 +65,10 @@ final class ProjectDetailViewModel {
     func progress(for project: Project) -> Double? {
         let totalRows = totalRows(for: project)
         guard totalRows > 0 else { return nil }
-        let clampedRow = min(max(project.currentRow, 1), totalRows)
-        return Double(clampedRow) / Double(totalRows)
+        let maxRowIndex = totalRows - 1
+        let clampedRow = min(max(project.currentRow, 0), maxRowIndex)
+        guard maxRowIndex > 0 else { return 1 }
+        return Double(clampedRow) / Double(maxRowIndex)
     }
 
     func sourceMetaText(for project: Project) -> String {
@@ -98,12 +100,12 @@ final class ProjectDetailViewModel {
 
     func canIncreaseRow(for project: Project) -> Bool {
         let totalRows = totalRows(for: project)
-        return totalRows == 0 || project.currentRow < totalRows
+        return totalRows == 0 || project.currentRow < totalRows - 1
     }
 
     func canIncreaseRepeat(for project: Project) -> Bool {
         guard let repeatTotal = project.repeatTotal else { return true }
-        return project.repeatCurrent < repeatTotal
+        return project.repeatCurrent < max(repeatTotal - 1, 0)
     }
 
     func incrementRow(for project: Project, in modelContext: ModelContext) {
@@ -113,7 +115,7 @@ final class ProjectDetailViewModel {
     }
 
     func decrementRow(for project: Project, in modelContext: ModelContext) {
-        guard project.currentRow > 1 else { return }
+        guard project.currentRow > 0 else { return }
         project.currentRow -= 1
         save(modelContext)
     }
@@ -125,7 +127,7 @@ final class ProjectDetailViewModel {
     }
 
     func decrementRepeat(for project: Project, in modelContext: ModelContext) {
-        guard project.repeatCurrent > 1 else { return }
+        guard project.repeatCurrent > 0 else { return }
         project.repeatCurrent -= 1
         save(modelContext)
     }
@@ -136,7 +138,7 @@ final class ProjectDetailViewModel {
     }
 
     func decrementStitch(for project: Project, in modelContext: ModelContext) {
-        guard project.currentStitch > 1 else { return }
+        guard project.currentStitch > 0 else { return }
         project.currentStitch -= 1
         save(modelContext)
     }
@@ -172,8 +174,8 @@ final class ProjectDetailViewModel {
     }
 
     private func clampedCurrentRow(for project: Project) -> Int {
-        guard !project.rows.isEmpty else { return 1 }
-        return min(max(project.currentRow, 1), project.rows.count)
+        guard !project.rows.isEmpty else { return 0 }
+        return min(max(project.currentRow, 0), project.rows.count - 1)
     }
 
     private func save(_ modelContext: ModelContext) {
@@ -216,7 +218,7 @@ final class AddNoteViewModel {
     }
 
     func adjustRow(by offset: Int) {
-        let currentValue = draft.rowNumber ?? 1
-        draft.rowNumberText = String(max(1, currentValue + offset))
+        let currentValue = draft.rowNumber ?? 0
+        draft.rowNumberText = String(max(0, currentValue + offset))
     }
 }

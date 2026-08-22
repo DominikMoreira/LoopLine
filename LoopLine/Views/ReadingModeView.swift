@@ -59,7 +59,7 @@ struct ReadingModeView: View {
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("This will reset the current row, repeat, and stitch to 1.")
+                Text("This will reset the current row, repeat, and stitch to 0.")
             }
         }
     }
@@ -92,7 +92,7 @@ struct ReadingModeView: View {
         VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(project.rows.enumerated()), id: \.offset) { index, row in
                 ReadingRow(
-                    rowNumber: index + 1,
+                    rowNumber: index,
                     text: row,
                     isActive: index == viewModel.activeRowIndex(for: project),
                     usesLargeControls: appSettings.largeControls,
@@ -137,7 +137,7 @@ struct ReadingModeView: View {
                 detail: viewModel.totalRows(for: project) > 0 ? "of \(viewModel.totalRows(for: project))" : nil,
                 isPrimary: true,
                 usesLargeControls: appSettings.largeControls,
-                canDecrease: project.currentRow > 1,
+                canDecrease: project.currentRow > 0,
                 canIncrease: viewModel.canIncreaseRow(for: project),
                 decreaseAction: { viewModel.decrementRow(for: project, in: modelContext) },
                 increaseAction: { viewModel.incrementRow(for: project, in: modelContext) }
@@ -152,7 +152,7 @@ struct ReadingModeView: View {
                 detail: project.repeatTotal.map { "of \($0)" },
                 isPrimary: false,
                 usesLargeControls: appSettings.largeControls,
-                canDecrease: project.repeatCurrent > 1,
+                canDecrease: project.repeatCurrent > 0,
                 canIncrease: viewModel.canIncreaseRepeat(for: project),
                 decreaseAction: { viewModel.decrementRepeat(for: project, in: modelContext) },
                 increaseAction: { viewModel.incrementRepeat(for: project, in: modelContext) }
@@ -167,7 +167,7 @@ struct ReadingModeView: View {
                 detail: nil,
                 isPrimary: false,
                 usesLargeControls: appSettings.largeControls,
-                canDecrease: project.currentStitch > 1,
+                canDecrease: project.currentStitch > 0,
                 canIncrease: true,
                 decreaseAction: { viewModel.decrementStitch(for: project, in: modelContext) },
                 increaseAction: { viewModel.incrementStitch(for: project, in: modelContext) }

@@ -188,7 +188,7 @@ struct ProjectDetailView: View {
                     title: "Current Row",
                     value: String(project.currentRow),
                     detail: viewModel.rowDetailText(for: project),
-                    canDecrease: project.currentRow > 1,
+                    canDecrease: project.currentRow > 0,
                     canIncrease: viewModel.canIncreaseRow(for: project),
                     decreaseAction: { viewModel.decrementRow(for: project, in: modelContext) },
                     increaseAction: { viewModel.incrementRow(for: project, in: modelContext) }
@@ -200,7 +200,7 @@ struct ProjectDetailView: View {
                     title: "Repeat",
                     value: viewModel.repeatDisplayText(for: project),
                     detail: nil,
-                    canDecrease: project.repeatCurrent > 1,
+                    canDecrease: project.repeatCurrent > 0,
                     canIncrease: viewModel.canIncreaseRepeat(for: project),
                     decreaseAction: { viewModel.decrementRepeat(for: project, in: modelContext) },
                     increaseAction: { viewModel.incrementRepeat(for: project, in: modelContext) }
@@ -212,7 +212,7 @@ struct ProjectDetailView: View {
                     title: "Stitches",
                     value: String(project.currentStitch),
                     detail: nil,
-                    canDecrease: project.currentStitch > 1,
+                    canDecrease: project.currentStitch > 0,
                     canIncrease: true,
                     decreaseAction: { viewModel.decrementStitch(for: project, in: modelContext) },
                     increaseAction: { viewModel.incrementStitch(for: project, in: modelContext) }
@@ -664,8 +664,8 @@ private struct CounterControlRow: View {
             name: "Sample Scarf",
             subtitle: "Beginner garter stitch",
             sourceType: .text,
-            currentRow: 3,
-            repeatCurrent: 1,
+            currentRow: 2,
+            repeatCurrent: 0,
             repeatTotal: 4,
             rows: ["Cast on", "Knit", "Bind off"],
             notes: [
