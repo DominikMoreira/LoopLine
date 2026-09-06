@@ -17,6 +17,7 @@ struct ContentView: View {
                     Label("Settings", systemImage: "gearshape")
                 }
         }
+        .tint(LoopLineTheme.accent)
         .onAppear(perform: ensureDefaultSettings)
     }
 

@@ -22,7 +22,7 @@ struct ProjectListView: View {
                     projectList
                 }
             }
-            .background(LoopLineTheme.appBackground)
+            .background(LoopLineTheme.appBackground.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $viewModel.isShowingCreateProject) {
@@ -58,13 +58,16 @@ struct ProjectListView: View {
                     .font(.headline)
                     .labelStyle(.titleAndIcon)
             }
-            .buttonStyle(LoopLinePrimaryButtonStyle(isFullWidth: false))
+            .buttonStyle(.plain)
+            .foregroundStyle(LoopLineTheme.accent)
+            .frame(minHeight: 44)
         }
         .padding(.horizontal, 24)
         .padding(.top, 18)
         .padding(.bottom, 20)
         .overlay(alignment: .bottom) {
             Divider()
+                .overlay(LoopLineTheme.separator)
         }
     }
 
@@ -73,26 +76,23 @@ struct ProjectListView: View {
             Spacer(minLength: 120)
 
             ZStack {
-                Circle()
-                    .fill(LoopLineTheme.surface)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(LoopLineTheme.accentSoft)
                     .frame(width: 112, height: 112)
-                    .overlay {
-                        Circle()
-                            .stroke(Color.secondary.opacity(0.32), lineWidth: 1)
-                    }
 
-                Image(systemName: "sparkle")
+                Image(systemName: "doc.badge.plus")
                     .font(.title.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.accent)
             }
 
             VStack(spacing: 8) {
                 Text("No projects yet")
                     .font(.title3.weight(.bold))
+                    .foregroundStyle(LoopLineTheme.primaryText)
 
-                Text("Add a pattern to get started - from a PDF, photo, or pasted text.")
+                Text("Add your first knitting pattern - from a PDF, photo, or pasted text.")
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 300)
             }
@@ -100,8 +100,7 @@ struct ProjectListView: View {
             Button {
                 viewModel.showCreateProject()
             } label: {
-                Label("Create first project", systemImage: "plus")
-                    .labelStyle(.titleAndIcon)
+                Text("Create project")
             }
             .buttonStyle(LoopLinePrimaryButtonStyle())
             .padding(.horizontal, 32)
@@ -119,7 +118,7 @@ struct ProjectListView: View {
             } label: {
                 ProjectCard(project: project)
             }
-            .listRowInsets(EdgeInsets(top: 18, leading: 24, bottom: 18, trailing: 18))
+            .listRowInsets(EdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 18))
             .listRowSeparator(.visible)
             .listRowBackground(LoopLineTheme.appBackground)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -148,15 +147,6 @@ private struct ProjectCard: View {
         return Double(clampedRow) / Double(maxRowIndex)
     }
 
-    private var rowSummary: String {
-        if totalRows > 0 {
-            let clampedRow = min(max(project.currentRow, 0), totalRows - 1)
-            return "Row \(clampedRow)/\(totalRows)"
-        }
-
-        return "Row \(max(project.currentRow, 0))"
-    }
-
     var body: some View {
         HStack(spacing: 16) {
             thumbnail
@@ -164,29 +154,33 @@ private struct ProjectCard: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(project.name)
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(project.name)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(LoopLineTheme.primaryText)
+                            .lineLimit(1)
 
-                    Text(project.subtitle?.isEmpty == false ? project.subtitle ?? "" : project.sourceType.displayName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                        Spacer(minLength: 8)
 
-                HStack(spacing: 14) {
-                    LoopLineProgressBar(progress: progress)
-                        .frame(maxWidth: .infinity)
+                        LoopLineSourceBadge(sourceType: project.sourceType)
+                    }
 
-                    Text(rowSummary)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                    Text(metricSummary)
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(LoopLineTheme.secondaryText)
                         .lineLimit(1)
                 }
+
+                LoopLineProgressBar(progress: progress)
+                    .frame(maxWidth: .infinity)
             }
         }
         .contentShape(Rectangle())
+    }
+
+    private var metricSummary: String {
+        let repeatText = project.repeatTotal.map { "\(project.repeatCurrent)/\($0)" } ?? String(project.repeatCurrent)
+        return "Row \(project.currentRow)  x \(repeatText)  \(project.currentStitch) sts"
     }
 
     @ViewBuilder
@@ -195,19 +189,19 @@ private struct ProjectCard: View {
             StoredPDFPreview(storedReference: sourceFilePath, height: 74)
                 .frame(width: 74, height: 74)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
         } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
             StoredImagePreview(storedReference: sourceFilePath, height: 74)
                 .frame(width: 74, height: 74)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
         } else {
             LoopLineSourcePlaceholder(sourceType: project.sourceType)
@@ -233,10 +227,10 @@ private struct CreateProjectView: View {
                     selectedSourceSection
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 28)
+                .padding(.top, 24)
                 .padding(.bottom, 110)
             }
-            .background(LoopLineTheme.appBackground)
+            .background(LoopLineTheme.appBackground.ignoresSafeArea())
             .navigationTitle("New Project")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -291,10 +285,10 @@ private struct CreateProjectView: View {
                 .font(.title3)
                 .textFieldStyle(.plain)
                 .padding(18)
-                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.42), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
 
             LoopLineFieldLabel(text: "Subtitle")
@@ -302,7 +296,7 @@ private struct CreateProjectView: View {
                 .font(.body)
                 .textFieldStyle(.plain)
                 .padding(16)
-                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
         }
     }
 
@@ -312,7 +306,7 @@ private struct CreateProjectView: View {
                 .fill(LoopLineTheme.primaryActionBackground)
                 .frame(width: 38, height: 8)
             Capsule()
-                .fill(Color(.systemGray4))
+                .fill(LoopLineTheme.progressTrack)
                 .frame(width: 38, height: 8)
         }
         .frame(maxWidth: .infinity)
@@ -321,7 +315,7 @@ private struct CreateProjectView: View {
 
     private var sourceSelectionSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            LoopLineSectionHeader(title: "Add Pattern")
+            LoopLineSectionHeader(title: "Choose how to add your pattern")
 
             ForEach(ImportSource.allCases, id: \.self) { sourceType in
                 Button {
@@ -351,7 +345,7 @@ private struct CreateProjectView: View {
 
                 Text(viewModel.draft.rows.isEmpty ? "Pattern text is required for pasted text projects." : "\(viewModel.draft.rows.count) rows ready to import")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
             }
         case .pdf:
             VStack(alignment: .leading, spacing: 12) {
@@ -388,7 +382,7 @@ private struct CreateProjectView: View {
                     ProgressView("Importing image...")
                 } else if let imageFilePath = viewModel.draft.imageFilePath {
                     StoredImagePreview(storedReference: imageFilePath, height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
 
                     sourceStatus(
                         fileName: viewModel.draft.imageFileName,
@@ -413,7 +407,7 @@ private struct CreateProjectView: View {
             if let fileName {
                 Label(fileName, systemImage: iconName)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
                     .lineLimit(2)
             } else {
                 Text(emptyText)
@@ -424,7 +418,7 @@ private struct CreateProjectView: View {
             if let errorText {
                 Text(errorText)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(LoopLineTheme.destructive)
             }
         }
     }
@@ -438,30 +432,30 @@ private struct SourceOptionRow: View {
         HStack(spacing: 14) {
             Image(systemName: iconName)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(isSelected ? LoopLineTheme.primaryActionForeground : .primary)
+                .foregroundStyle(LoopLineTheme.accent)
                 .frame(width: 44, height: 44)
-                .background(isSelected ? LoopLineTheme.primaryActionBackground : LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(LoopLineTheme.accentSoft, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(sourceType.displayName)
                     .font(.headline)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(LoopLineTheme.primaryText)
                 Text(description)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
             }
 
             Spacer()
 
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
-                .foregroundStyle(isSelected ? LoopLineTheme.primaryActionBackground : Color.secondary.opacity(0.4))
+                .foregroundStyle(isSelected ? LoopLineTheme.accent : LoopLineTheme.secondaryText.opacity(0.4))
         }
         .padding(14)
-        .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isSelected ? LoopLineTheme.primaryActionBackground : Color.secondary.opacity(0.24), lineWidth: isSelected ? 1.5 : 1)
+            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                .stroke(isSelected ? LoopLineTheme.accent : LoopLineTheme.subtleStroke, lineWidth: isSelected ? 1.5 : 1)
         }
     }
 

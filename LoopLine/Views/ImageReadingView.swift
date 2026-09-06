@@ -14,15 +14,16 @@ struct ImageReadingView: View {
                         contentMode: .fit
                     )
                     .padding(18)
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
                 }
                 .background(LoopLineTheme.readingBackground.ignoresSafeArea())
                 .overlay(alignment: .bottomLeading) {
-                    Text("Pinch to zoom - drag to pan")
+                    Label("Pinch to zoom - drag to pan", systemImage: "arrow.up.left.and.arrow.down.right")
                         .font(.caption.monospaced())
                         .foregroundStyle(LoopLineTheme.readingSecondaryText)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(LoopLineTheme.mediaHintBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .background(LoopLineTheme.mediaHintBackground, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
                         .padding(18)
                 }
             } else {
@@ -31,6 +32,8 @@ struct ImageReadingView: View {
                     systemImage: "photo",
                     description: Text("The imported image could not be found.")
                 )
+                .foregroundStyle(LoopLineTheme.primaryText, LoopLineTheme.accent, LoopLineTheme.secondaryText)
+                .background(LoopLineTheme.readingBackground.ignoresSafeArea())
             }
         }
         .navigationTitle("Reading Mode")

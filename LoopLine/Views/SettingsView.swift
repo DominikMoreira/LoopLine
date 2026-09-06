@@ -21,6 +21,7 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
+            .background(LoopLineTheme.appBackground.ignoresSafeArea())
         }
     }
 }
@@ -40,7 +41,7 @@ private struct SettingsForm: View {
             .padding(.top, 12)
             .padding(.bottom, 32)
         }
-        .background(LoopLineTheme.appBackground)
+        .background(LoopLineTheme.appBackground.ignoresSafeArea())
     }
 
     private var readingModeSection: some View {
@@ -67,14 +68,14 @@ private struct SettingsForm: View {
                                 .font(.headline)
                             Text("Customize row highlight visibility")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(LoopLineTheme.secondaryText)
                         }
 
                         Spacer()
 
                         Text(settings.guideOpacity, format: .percent.precision(.fractionLength(0)))
                             .font(.subheadline.weight(.semibold).monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(LoopLineTheme.secondaryText)
                     }
 
                     Slider(value: $settings.guideOpacity, in: 0.2...1.0) { isEditing in
@@ -90,14 +91,14 @@ private struct SettingsForm: View {
                         Text("High")
                     }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
                 }
                 .padding(16)
             }
-            .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
             }
         }
     }
@@ -109,16 +110,17 @@ private struct SettingsForm: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("LoopLine")
                     .font(.headline)
+                    .foregroundStyle(LoopLineTheme.primaryText)
                 Text("Version \(viewModel.appVersion)")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(LoopLineTheme.appBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
             }
         }
     }
@@ -134,12 +136,14 @@ private struct SettingsToggleRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)
+                    .foregroundStyle(LoopLineTheme.primaryText)
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
             }
         }
         .padding(16)
+        .tint(LoopLineTheme.accent)
     }
 }
 

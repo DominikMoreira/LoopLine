@@ -22,6 +22,7 @@ struct StoredPDFPreview: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(LoopLineTheme.surface)
+                    .tint(LoopLineTheme.accent)
             }
         }
         .frame(maxWidth: .infinity)

@@ -25,20 +25,21 @@ struct PDFReadingView: View {
                         isMarkupActive: viewModel.isMarkupActive,
                         markupError: $viewModel.markupError
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(viewModel.isMarkupActive ? .yellow.opacity(0.75) : LoopLineTheme.readingStroke, lineWidth: viewModel.isMarkupActive ? 2 : 1)
+                        RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                            .stroke(viewModel.isMarkupActive ? LoopLineTheme.readingGuide.opacity(0.9) : LoopLineTheme.readingStroke, lineWidth: viewModel.isMarkupActive ? 2 : 1)
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
 
-                    Text(viewModel.markupHintText)
+                    Label(viewModel.markupHintText, systemImage: viewModel.isMarkupActive ? "pencil.tip.crop.circle.fill" : "hand.draw")
                         .font(.caption.monospaced())
                         .foregroundStyle(LoopLineTheme.readingSecondaryText)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
-                        .background(LoopLineTheme.mediaHintBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .background(LoopLineTheme.mediaHintBackground, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
                         .padding(.bottom, 16)
                 }
                 .background(LoopLineTheme.readingBackground.ignoresSafeArea())
@@ -54,6 +55,7 @@ struct PDFReadingView: View {
                         systemImage: "doc.richtext",
                         description: Text("The imported PDF could not be found.")
                     )
+                    .foregroundStyle(LoopLineTheme.primaryText, LoopLineTheme.accent, LoopLineTheme.secondaryText)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .background(LoopLineTheme.readingBackground.ignoresSafeArea())
@@ -104,7 +106,7 @@ struct PDFReadingView: View {
                 .frame(minWidth: 92, alignment: .leading)
                 .padding(.horizontal, 12)
                 .frame(height: 48)
-                .background(LoopLineTheme.readingControlFill, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(LoopLineTheme.readingControlFill, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
             }
             .accessibilityLabel("Tracking metric")
             .accessibilityValue(viewModel.selectedMetric.title)
@@ -147,9 +149,9 @@ struct PDFReadingView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(LoopLineTheme.readingPanel, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(LoopLineTheme.readingPanel, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
                 .stroke(LoopLineTheme.readingStroke, lineWidth: 1)
         }
     }
