@@ -26,7 +26,7 @@ struct ProjectDetailView: View {
             .padding(.top, 22)
             .padding(.bottom, 36)
         }
-        .background(LoopLineTheme.appBackground)
+        .background(LoopLineTheme.appBackground.ignoresSafeArea())
         .navigationTitle("Project")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -64,17 +64,17 @@ struct ProjectDetailView: View {
         Group {
             if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
                 StoredPDFPreview(storedReference: sourceFilePath, height: 190)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                     }
             } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
                 StoredImagePreview(storedReference: sourceFilePath, height: 190)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                     }
             } else {
                 LoopLineSourcePlaceholder(sourceType: project.sourceType, label: "Cover Image")
@@ -87,7 +87,7 @@ struct ProjectDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(project.name)
                 .font(.largeTitle.weight(.bold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(LoopLineTheme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: 8) {
@@ -96,12 +96,12 @@ struct ProjectDetailView: View {
                 if let subtitle = project.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(LoopLineTheme.secondaryText)
                         .lineLimit(2)
                 } else {
                     Text(viewModel.sourceMetaText(for: project))
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(LoopLineTheme.secondaryText)
                         .lineLimit(1)
                 }
             }
@@ -119,11 +119,12 @@ struct ProjectDetailView: View {
             LoopLineStatTile(value: viewModel.progressText(for: project), label: "Progress")
         }
         .frame(maxWidth: .infinity)
-        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
         }
+        .shadow(color: LoopLineTheme.shadow, radius: 14, x: 0, y: 8)
     }
 
     private var readingActions: some View {
@@ -163,17 +164,28 @@ struct ProjectDetailView: View {
             }
 
             if project.notes.isEmpty {
-                Text("No notes yet")
+                Text("No notes yet. Add a reminder for a specific row or a general note.")
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(18)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
             } else {
-                VStack(spacing: 14) {
+                VStack(spacing: 0) {
                     ForEach(project.notes) { note in
                         NoteRow(note: note)
+                        if note.id != project.notes.last?.id {
+                            Divider()
+                                .padding(.leading, 46)
+                                .overlay(LoopLineTheme.separator)
+                        }
                     }
+                }
+                .padding(.horizontal, 14)
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
             }
         }
@@ -219,7 +231,11 @@ struct ProjectDetailView: View {
                 )
             }
             .padding(.horizontal, 16)
-            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            }
         }
     }
 
@@ -241,7 +257,11 @@ struct ProjectDetailView: View {
                 DetailRow(label: "Notes", value: String(project.notes.count))
             }
             .padding(16)
-            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            }
         }
     }
 
@@ -252,10 +272,13 @@ struct ProjectDetailView: View {
             }
             .buttonStyle(LoopLineSecondaryButtonStyle())
 
-            Button("Delete") {
+            Button {
                 viewModel.isShowingDeleteConfirmation = true
+            } label: {
+                Label("Delete Project", systemImage: "trash")
+                    .labelStyle(.titleAndIcon)
             }
-            .buttonStyle(LoopLineSecondaryButtonStyle(tint: .red))
+            .buttonStyle(LoopLineDangerButtonStyle())
         }
     }
 }
@@ -287,10 +310,10 @@ struct PastedTextImportView: View {
                     .frame(minHeight: 280)
                     .padding(10)
                     .scrollContentBackground(.hidden)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                     }
                     .textInputAutocapitalization(.sentences)
 
@@ -301,6 +324,7 @@ struct PastedTextImportView: View {
                 Spacer()
             }
             .padding(24)
+            .background(LoopLineTheme.appBackground.ignoresSafeArea())
             .navigationTitle("Import Text")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -354,17 +378,26 @@ private struct EditProjectView: View {
                     .font(.title3)
                     .textFieldStyle(.plain)
                     .padding(16)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    }
 
                 LoopLineFieldLabel(text: "Subtitle")
                 TextField("Subtitle", text: $viewModel.draft.subtitle)
                     .textFieldStyle(.plain)
                     .padding(16)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    }
 
                 Spacer()
             }
             .padding(24)
+            .background(LoopLineTheme.appBackground.ignoresSafeArea())
             .navigationTitle("Edit Project")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -420,7 +453,7 @@ struct AddNoteView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     Capsule()
-                        .fill(Color(.systemGray4))
+                        .fill(LoopLineTheme.separator)
                         .frame(width: 52, height: 5)
                         .frame(maxWidth: .infinity)
 
@@ -431,10 +464,10 @@ struct AddNoteView: View {
                             .textFieldStyle(.plain)
                             .padding(16)
                             .frame(minHeight: 116, alignment: .topLeading)
-                            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
                             .overlay {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                             }
                     }
 
@@ -447,10 +480,11 @@ struct AddNoteView: View {
                             )
                         )
                         .font(.headline)
+                        .tint(LoopLineTheme.accent)
 
                         Text("Reminder will appear when you reach that row in reading mode.")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(LoopLineTheme.secondaryText)
                     }
 
                     if viewModel.attachesToRow {
@@ -462,6 +496,7 @@ struct AddNoteView: View {
                 .padding(24)
                 .padding(.bottom, 96)
             }
+            .background(LoopLineTheme.appBackground.ignoresSafeArea())
             .navigationTitle("Add Note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -505,10 +540,10 @@ struct AddNoteView: View {
                     .textFieldStyle(.plain)
                     .font(.title3.monospacedDigit())
                     .padding(16)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                     }
 
                 VStack(spacing: 10) {
@@ -530,7 +565,7 @@ struct AddNoteView: View {
 
             Text("Example: On row 12, start decreases")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(LoopLineTheme.secondaryText)
         }
     }
 
@@ -540,25 +575,29 @@ struct AddNoteView: View {
 
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "flag.fill")
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(LoopLineTheme.readingGuide)
                     .padding(.top, 2)
 
                 VStack(alignment: .leading, spacing: 2) {
                     if let rowNumber = viewModel.draft.rowNumber {
                         Text("Row \(rowNumber)")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(LoopLineTheme.secondaryText)
                     }
 
                     Text(viewModel.draft.trimmedText.isEmpty ? "Your note preview will appear here." : viewModel.draft.trimmedText)
                         .font(.body)
-                        .foregroundStyle(viewModel.draft.trimmedText.isEmpty ? .secondary : .primary)
+                        .foregroundStyle(viewModel.draft.trimmedText.isEmpty ? LoopLineTheme.secondaryText : LoopLineTheme.primaryText)
                 }
 
                 Spacer()
             }
             .padding(16)
-            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            }
         }
     }
 }
@@ -570,21 +609,18 @@ private struct NoteRow: View {
         HStack(alignment: .top, spacing: 14) {
             Text(rowBadgeText)
                 .font(.caption.weight(.bold).monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(LoopLineTheme.accent)
                 .frame(width: 50, height: 42)
-                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(Color.secondary.opacity(0.28), lineWidth: 1)
-                }
+                .background(LoopLineTheme.accentSoft, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             Text(note.text)
                 .font(.body)
-                .foregroundStyle(.primary)
+                .foregroundStyle(LoopLineTheme.primaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer()
         }
+        .padding(.vertical, 14)
     }
 
     private var rowBadgeText: String {
@@ -602,11 +638,12 @@ private struct DetailRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(label)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(LoopLineTheme.secondaryText)
             Spacer(minLength: 16)
             Text(value)
                 .multilineTextAlignment(.trailing)
                 .lineLimit(2)
+                .foregroundStyle(LoopLineTheme.primaryText)
         }
         .font(.subheadline)
     }
@@ -626,10 +663,11 @@ private struct CounterControlRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(LoopLineTheme.primaryText)
                 if let detail {
                     Text(detail)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(LoopLineTheme.secondaryText)
                 }
             }
 
@@ -640,9 +678,11 @@ private struct CounterControlRow: View {
             }
             .buttonStyle(LoopLineIconButtonStyle(size: 42))
             .disabled(!canDecrease)
+            .opacity(canDecrease ? 1 : 0.38)
 
             Text(value)
                 .font(.title3.weight(.bold))
+                .foregroundStyle(LoopLineTheme.primaryText)
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -653,6 +693,7 @@ private struct CounterControlRow: View {
             }
             .buttonStyle(LoopLineIconButtonStyle(size: 42))
             .disabled(!canIncrease)
+            .opacity(canIncrease ? 1 : 0.38)
         }
         .padding(.vertical, 12)
     }

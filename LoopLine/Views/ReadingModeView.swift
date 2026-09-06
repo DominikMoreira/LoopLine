@@ -66,10 +66,10 @@ struct ReadingModeView: View {
 
     private var readingPanel: some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
                 .fill(panelBackground)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
                         .stroke(panelStroke, lineWidth: 1)
                 }
 
@@ -178,7 +178,7 @@ struct ReadingModeView: View {
         .padding(.horizontal, 18)
         .padding(.top, 12)
         .padding(.bottom, 12)
-        .background(readingBackground)
+        .background(LoopLineTheme.surface.shadow(color: LoopLineTheme.shadow, radius: 16, x: 0, y: -6))
     }
 
     private var reminderStrip: some View {
@@ -187,7 +187,7 @@ struct ReadingModeView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "flag.fill")
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(LoopLineTheme.readingGuide)
 
                 Text(viewModel.reminderText(for: project))
                     .font(.subheadline.weight(.semibold))
@@ -198,13 +198,13 @@ struct ReadingModeView: View {
 
                 Text("+ Add")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(secondaryText)
+                    .foregroundStyle(LoopLineTheme.accent)
             }
             .padding(.horizontal, 16)
             .frame(height: 54)
-            .background(stripBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(stripBackground, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
                     .stroke(panelStroke, lineWidth: 1)
             }
         }
@@ -273,8 +273,8 @@ private struct ReadingRow: View {
         .padding(.horizontal, horizontalPadding)
         .background {
             if isActive {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.yellow.opacity(0.88 * guideOpacity))
+                RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                    .fill(LoopLineTheme.readingGuide.opacity(0.84 * guideOpacity))
             }
         }
         .contentShape(Rectangle())
@@ -284,11 +284,11 @@ private struct ReadingRow: View {
     }
 
     private var rowNumberColor: Color {
-        isActive ? .black : LoopLineTheme.readingSecondaryText
+        isActive ? LoopLineTheme.primaryText : LoopLineTheme.readingSecondaryText
     }
 
     private var rowTextColor: Color {
-        isActive ? .black : LoopLineTheme.readingPrimaryText
+        isActive ? LoopLineTheme.primaryText : LoopLineTheme.readingPrimaryText
     }
 }
 

@@ -19,14 +19,17 @@ struct StoredImagePreview: View {
                     systemImage: "photo",
                     description: Text("The imported image could not be found.")
                 )
+                .foregroundStyle(LoopLineTheme.primaryText, LoopLineTheme.accent, LoopLineTheme.secondaryText)
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity)
+                    .tint(LoopLineTheme.accent)
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(LoopLineTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius))
         .task(id: storedReference) {
             await loadImage()
         }
