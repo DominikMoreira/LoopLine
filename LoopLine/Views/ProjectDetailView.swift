@@ -135,6 +135,7 @@ struct ProjectDetailView: View {
                 Text("Open Reading Mode")
             }
             .buttonStyle(LoopLinePrimaryButtonStyle())
+            .accessibilityIdentifier("openReadingModeButton")
 
             if project.sourceType == .text {
                 Button("Import Pasted Text") {

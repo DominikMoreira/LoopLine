@@ -61,6 +61,7 @@ struct PDFReadingView: View {
                 .background(LoopLineTheme.readingBackground.ignoresSafeArea())
             }
         }
+        .accessibilityIdentifier("pdfReadingMode")
         .navigationTitle("Reading Mode")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(LoopLineTheme.readingBackground, for: .navigationBar)
