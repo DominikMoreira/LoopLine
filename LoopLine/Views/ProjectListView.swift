@@ -118,6 +118,7 @@ struct ProjectListView: View {
             } label: {
                 ProjectCard(project: project)
             }
+            .modifier(UITestPDFProjectIdentifier(projectName: project.name))
             .listRowInsets(EdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 18))
             .listRowSeparator(.visible)
             .listRowBackground(LoopLineTheme.appBackground)
@@ -129,6 +130,20 @@ struct ProjectListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        .accessibilityIdentifier("projectsList")
+    }
+}
+
+private struct UITestPDFProjectIdentifier: ViewModifier {
+    let projectName: String
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if projectName == "UI Test PDF Project" {
+            content.accessibilityIdentifier("uiTestPDFProject")
+        } else {
+            content
+        }
     }
 }
 
