@@ -27,6 +27,10 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
+      - name: List available simulators
+        run: |
+            xcrun simctl list devices available
+
       - name: Run unit tests
         run: |
           xcodebuild test \
