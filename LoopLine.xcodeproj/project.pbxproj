@@ -11,8 +11,27 @@
 		ADE282882FF4715700663957 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = ADE282862FF4715000663957 /* README.md */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		AD769B503050C13400463AD1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000100000000;
+			remoteInfo = LoopLine;
+		};
+		AD769B613050C35F00463AD1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 000000000000000100000000;
+			remoteInfo = LoopLine;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* LoopLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LoopLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD769B4C3050C13400463AD1 /* LoopLineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LoopLineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD769B5D3050C35F00463AD1 /* LoopLineUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LoopLineUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADE282832FF4714200663957 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		ADE282862FF4715000663957 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -21,6 +40,16 @@
 		000000000000000000000010 /* LoopLine */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = LoopLine;
+			sourceTree = "<group>";
+		};
+		AD769B4D3050C13400463AD1 /* LoopLineTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LoopLineTests;
+			sourceTree = "<group>";
+		};
+		AD769B5E3050C35F00463AD1 /* LoopLineUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LoopLineUITests;
 			sourceTree = "<group>";
 		};
 		ADE282A62FF4722800663957 /* Docs */ = {
@@ -36,6 +65,16 @@
 			files = (
 			);
 		};
+		AD769B493050C13400463AD1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		AD769B5A3050C35F00463AD1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,6 +85,8 @@
 				ADE282862FF4715000663957 /* README.md */,
 				ADE282A62FF4722800663957 /* Docs */,
 				000000000000000000000010 /* LoopLine */,
+				AD769B4D3050C13400463AD1 /* LoopLineTests */,
+				AD769B5E3050C35F00463AD1 /* LoopLineUITests */,
 				000000000000000000000020 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +95,8 @@
 			isa = PBXGroup;
 			children = (
 				000000000000000000000120 /* LoopLine.app */,
+				AD769B4C3050C13400463AD1 /* LoopLineTests.xctest */,
+				AD769B5D3050C35F00463AD1 /* LoopLineUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -80,6 +123,48 @@
 			productReference = 000000000000000000000120 /* LoopLine.app */;
 			productType = "com.apple.product-type.application";
 		};
+		AD769B4B3050C13400463AD1 /* LoopLineTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD769B543050C13400463AD1 /* Build configuration list for PBXNativeTarget "LoopLineTests" */;
+			buildPhases = (
+				AD769B483050C13400463AD1 /* Sources */,
+				AD769B493050C13400463AD1 /* Frameworks */,
+				AD769B4A3050C13400463AD1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AD769B513050C13400463AD1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AD769B4D3050C13400463AD1 /* LoopLineTests */,
+			);
+			name = LoopLineTests;
+			productName = LoopLineTests;
+			productReference = AD769B4C3050C13400463AD1 /* LoopLineTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		AD769B5C3050C35F00463AD1 /* LoopLineUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD769B633050C35F00463AD1 /* Build configuration list for PBXNativeTarget "LoopLineUITests" */;
+			buildPhases = (
+				AD769B593050C35F00463AD1 /* Sources */,
+				AD769B5A3050C35F00463AD1 /* Frameworks */,
+				AD769B5B3050C35F00463AD1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AD769B623050C35F00463AD1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AD769B5E3050C35F00463AD1 /* LoopLineUITests */,
+			);
+			name = LoopLineUITests;
+			productName = LoopLineUITests;
+			productReference = AD769B5D3050C35F00463AD1 /* LoopLineUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -87,11 +172,19 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2630;
+				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					000000000000000100000000 = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					AD769B4B3050C13400463AD1 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 000000000000000100000000;
+					};
+					AD769B5C3050C35F00463AD1 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 000000000000000100000000;
 					};
 				};
 			};
@@ -110,6 +203,8 @@
 			projectRoot = "";
 			targets = (
 				000000000000000100000000 /* LoopLine */,
+				AD769B4B3050C13400463AD1 /* LoopLineTests */,
+				AD769B5C3050C35F00463AD1 /* LoopLineUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -122,6 +217,16 @@
 				ADE282882FF4715700663957 /* README.md in Resources */,
 			);
 		};
+		AD769B4A3050C13400463AD1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		AD769B5B3050C35F00463AD1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -130,7 +235,30 @@
 			files = (
 			);
 		};
+		AD769B483050C13400463AD1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		AD769B593050C35F00463AD1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AD769B513050C13400463AD1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 000000000000000100000000 /* LoopLine */;
+			targetProxy = AD769B503050C13400463AD1 /* PBXContainerItemProxy */;
+		};
+		AD769B623050C35F00463AD1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 000000000000000100000000 /* LoopLine */;
+			targetProxy = AD769B613050C35F00463AD1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		000000000000000011000000 /* Debug configuration for PBXProject "LoopLine" */ = {
@@ -353,6 +481,98 @@
 			};
 			name = Release;
 		};
+		AD769B523050C13400463AD1 /* Debug configuration for PBXNativeTarget "LoopLineTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZRUVWXD37Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.DominikMoreira.LoopLineTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LoopLine.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LoopLine";
+			};
+			name = Debug;
+		};
+		AD769B533050C13400463AD1 /* Release configuration for PBXNativeTarget "LoopLineTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZRUVWXD37Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.DominikMoreira.LoopLineTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LoopLine.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LoopLine";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AD769B643050C35F00463AD1 /* Debug configuration for PBXNativeTarget "LoopLineUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZRUVWXD37Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.DominikMoreira.LoopLineUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LoopLine;
+			};
+			name = Debug;
+		};
+		AD769B653050C35F00463AD1 /* Release configuration for PBXNativeTarget "LoopLineUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZRUVWXD37Y;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.DominikMoreira.LoopLineUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LoopLine;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -369,6 +589,22 @@
 			buildConfigurations = (
 				000000000000000111000000 /* Debug configuration for PBXNativeTarget "LoopLine" */,
 				000000000000000112000000 /* Release configuration for PBXNativeTarget "LoopLine" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		AD769B543050C13400463AD1 /* Build configuration list for PBXNativeTarget "LoopLineTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD769B523050C13400463AD1 /* Debug configuration for PBXNativeTarget "LoopLineTests" */,
+				AD769B533050C13400463AD1 /* Release configuration for PBXNativeTarget "LoopLineTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		AD769B633050C35F00463AD1 /* Build configuration list for PBXNativeTarget "LoopLineUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD769B643050C35F00463AD1 /* Debug configuration for PBXNativeTarget "LoopLineUITests" */,
+				AD769B653050C35F00463AD1 /* Release configuration for PBXNativeTarget "LoopLineUITests" */,
 			);
 			defaultConfigurationName = Release;
 		};
