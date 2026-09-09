@@ -36,7 +36,7 @@ jobs:
           xcodebuild test \
             -project LoopLine.xcodeproj \
             -scheme LoopLine \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=18.5' \
             -only-testing:LoopLineTests \
             -derivedDataPath DerivedData \
             -resultBundlePath TestResults/UnitTests.xcresult \
@@ -74,7 +74,7 @@ jobs:
           xcodebuild test \
             -project LoopLine.xcodeproj \
             -scheme LoopLine \
-            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=18.5' \
             -only-testing:LoopLineUITests \
             -derivedDataPath DerivedData \
             -resultBundlePath TestResults/UITests.xcresult \
