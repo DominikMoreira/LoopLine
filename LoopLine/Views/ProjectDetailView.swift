@@ -19,7 +19,6 @@ struct ProjectDetailView: View {
                 readingActions
                 notesSection
                 trackingSection
-                metadataSection
                 secondaryActions
             }
             .padding(.horizontal, 24)
@@ -231,32 +230,6 @@ struct ProjectDetailView: View {
                 )
             }
             .padding(.horizontal, 16)
-            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
-            }
-        }
-    }
-
-    private var metadataSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            LoopLineSectionHeader(title: "Source")
-
-            VStack(spacing: 12) {
-                DetailRow(label: "Source Type", value: project.sourceType.displayName)
-
-                if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
-                    DetailRow(label: "PDF", value: URL(fileURLWithPath: sourceFilePath).lastPathComponent)
-                }
-
-                if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
-                    DetailRow(label: "Image", value: URL(fileURLWithPath: sourceFilePath).lastPathComponent)
-                }
-
-                DetailRow(label: "Notes", value: String(project.notes.count))
-            }
-            .padding(16)
             .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
@@ -628,24 +601,6 @@ private struct NoteRow: View {
             return "R\(rowNumber)"
         }
         return "Note"
-    }
-}
-
-private struct DetailRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(label)
-                .foregroundStyle(LoopLineTheme.secondaryText)
-            Spacer(minLength: 16)
-            Text(value)
-                .multilineTextAlignment(.trailing)
-                .lineLimit(2)
-                .foregroundStyle(LoopLineTheme.primaryText)
-        }
-        .font(.subheadline)
     }
 }
 
