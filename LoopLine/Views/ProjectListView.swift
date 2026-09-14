@@ -180,7 +180,7 @@ private struct ProjectCard: View {
 
     private var metricSummary: String {
         let repeatText = project.repeatTotal.map { "\(project.repeatCurrent)/\($0)" } ?? String(project.repeatCurrent)
-        return "Row \(project.currentRow)  x \(repeatText)  \(project.currentStitch) sts"
+        return String(localized: "Row \(project.currentRow)  x \(repeatText)  \(project.currentStitch) sts")
     }
 
     @ViewBuilder
@@ -362,7 +362,9 @@ private struct CreateProjectView: View {
                 )
             }
         case .image:
-            let imageButtonTitle = viewModel.draft.imageFileName == nil ? "Choose Image" : "Choose Different Image"
+            let imageButtonTitle: LocalizedStringResource = viewModel.draft.imageFileName == nil
+                ? "Choose Image"
+                : "Choose Different Image"
 
             VStack(alignment: .leading, spacing: 12) {
                 PhotosPicker(
@@ -402,7 +404,12 @@ private struct CreateProjectView: View {
         }
     }
 
-    private func sourceStatus(fileName: String?, emptyText: String, errorText: String?, iconName: String) -> some View {
+    private func sourceStatus(
+        fileName: String?,
+        emptyText: LocalizedStringResource,
+        errorText: String?,
+        iconName: String
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             if let fileName {
                 Label(fileName, systemImage: iconName)
@@ -470,7 +477,7 @@ private struct SourceOptionRow: View {
         }
     }
 
-    private var description: String {
+    private var description: LocalizedStringResource {
         switch sourceType {
         case .pdf:
             "Import a saved pattern PDF."
