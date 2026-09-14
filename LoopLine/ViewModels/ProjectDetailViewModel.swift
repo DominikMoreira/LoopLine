@@ -77,7 +77,9 @@ final class ProjectDetailViewModel {
         }
 
         let totalRows = totalRows(for: project)
-        return totalRows > 0 ? "\(totalRows) rows" : project.sourceType.displayName
+        return totalRows > 0
+            ? String(localized: "\(totalRows) rows")
+            : String(localized: project.sourceType.displayName)
     }
 
     func progressText(for project: Project) -> String {
@@ -87,7 +89,7 @@ final class ProjectDetailViewModel {
 
     func repeatDisplayText(for project: Project) -> String {
         if let repeatTotal = project.repeatTotal {
-            "\(project.repeatCurrent) of \(repeatTotal)"
+            String(localized: "\(project.repeatCurrent) of \(repeatTotal)")
         } else {
             String(project.repeatCurrent)
         }
@@ -95,7 +97,7 @@ final class ProjectDetailViewModel {
 
     func rowDetailText(for project: Project) -> String? {
         let totalRows = totalRows(for: project)
-        return totalRows > 0 ? "of \(totalRows) rows" : nil
+        return totalRows > 0 ? String(localized: "of \(totalRows) rows") : nil
     }
 
     func canIncreaseRow(for project: Project) -> Bool {

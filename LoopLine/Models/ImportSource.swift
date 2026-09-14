@@ -5,7 +5,7 @@ enum ImportSource: String, Codable, CaseIterable {
     case image
     case text
 
-    var displayName: String {
+    var displayName: LocalizedStringResource {
         switch self {
         case .pdf:
             "PDF"

@@ -605,7 +605,7 @@ private struct NoteRow: View {
 }
 
 private struct CounterControlRow: View {
-    let title: String
+    let title: LocalizedStringResource
     let value: String
     let detail: String?
     let canDecrease: Bool

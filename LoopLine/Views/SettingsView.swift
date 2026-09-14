@@ -127,8 +127,8 @@ private struct SettingsForm: View {
 }
 
 private struct SettingsToggleRow: View {
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringResource
+    let subtitle: LocalizedStringResource
     @Binding var isOn: Bool
 
     var body: some View {

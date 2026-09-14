@@ -134,7 +134,9 @@ struct ReadingModeView: View {
             CounterControlPanel(
                 label: "ROW",
                 value: String(project.currentRow),
-                detail: viewModel.totalRows(for: project) > 0 ? "of \(viewModel.totalRows(for: project))" : nil,
+                detail: viewModel.totalRows(for: project) > 0
+                    ? String(localized: "of \(viewModel.totalRows(for: project))")
+                    : nil,
                 isPrimary: true,
                 usesLargeControls: appSettings.largeControls,
                 canDecrease: project.currentRow > 0,
@@ -149,7 +151,7 @@ struct ReadingModeView: View {
             CounterControlPanel(
                 label: "REPEAT",
                 value: String(project.repeatCurrent),
-                detail: project.repeatTotal.map { "of \($0)" },
+                detail: project.repeatTotal.map { String(localized: "of \($0)") },
                 isPrimary: false,
                 usesLargeControls: appSettings.largeControls,
                 canDecrease: project.repeatCurrent > 0,
@@ -293,7 +295,7 @@ private struct ReadingRow: View {
 }
 
 private struct CounterControlPanel: View {
-    let label: String
+    let label: LocalizedStringResource
     let value: String
     let detail: String?
     let isPrimary: Bool

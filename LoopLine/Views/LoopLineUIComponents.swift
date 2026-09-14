@@ -188,20 +188,23 @@ struct LoopLineIconButtonStyle: ButtonStyle {
 }
 
 struct LoopLineSectionHeader: View {
-    let title: String
-    var actionTitle: String?
+    let title: LocalizedStringResource
+    var actionTitle: LocalizedStringResource?
     var action: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title.uppercased())
+            Text(title)
+                .textCase(.uppercase)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(LoopLineTheme.secondaryText)
 
             Spacer()
 
             if let actionTitle, let action {
-                Button(actionTitle, action: action)
+                Button(action: action) {
+                    Text(actionTitle)
+                }
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(LoopLineTheme.accent)
             }
@@ -221,7 +224,7 @@ struct LoopLineSourceBadge: View {
             .background(LoopLineTheme.badgeBackground(for: sourceType), in: Capsule())
     }
 
-    private var shortLabel: String {
+    private var shortLabel: LocalizedStringResource {
         switch sourceType {
         case .pdf:
             "PDF"
@@ -235,7 +238,7 @@ struct LoopLineSourceBadge: View {
 
 struct LoopLineSourcePlaceholder: View {
     let sourceType: ImportSource
-    var label: String? = nil
+    var label: LocalizedStringResource? = nil
 
     var body: some View {
         VStack(spacing: 8) {
@@ -266,7 +269,7 @@ struct LoopLineSourcePlaceholder: View {
         }
     }
 
-    private var sourceTypeShortName: String {
+    private var sourceTypeShortName: LocalizedStringResource {
         switch sourceType {
         case .pdf:
             "PDF"
@@ -299,7 +302,7 @@ struct LoopLineProgressBar: View {
 
 struct LoopLineStatTile: View {
     let value: String
-    let label: String
+    let label: LocalizedStringResource
 
     var body: some View {
         VStack(spacing: 4) {
@@ -321,7 +324,7 @@ struct LoopLineStatTile: View {
 }
 
 struct LoopLineFieldLabel: View {
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
         Text(text)

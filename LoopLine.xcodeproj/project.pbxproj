@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AD0402D63058905200CE637A /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AD0402D53058905200CE637A /* Localizable.xcstrings */; };
 		ADE282852FF4714700663957 /* AGENTS.md in Resources */ = {isa = PBXBuildFile; fileRef = ADE282832FF4714200663957 /* AGENTS.md */; };
 		ADE282882FF4715700663957 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = ADE282862FF4715000663957 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* LoopLine.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LoopLine.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD0402D53058905200CE637A /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		ADE282832FF4714200663957 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
 		ADE282862FF4715000663957 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -42,6 +44,7 @@
 		000000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				AD0402D53058905200CE637A /* Localizable.xcstrings */,
 				ADE282832FF4714200663957 /* AGENTS.md */,
 				ADE282862FF4715000663957 /* README.md */,
 				ADE282A62FF4722800663957 /* Docs */,
@@ -101,6 +104,7 @@
 			knownRegions = (
 				en,
 				Base,
+				de,
 			);
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
@@ -118,6 +122,7 @@
 		000000000000000140000000 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				AD0402D63058905200CE637A /* Localizable.xcstrings in Resources */,
 				ADE282852FF4714700663957 /* AGENTS.md in Resources */,
 				ADE282882FF4715700663957 /* README.md in Resources */,
 			);
@@ -197,6 +202,7 @@
 				PROJECT_UNIQUE_VALUE = S576E1EZ;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				WATCHOS_DEPLOYMENT_TARGET = 27.0;
 				XROS_DEPLOYMENT_TARGET = 27.0;
@@ -260,6 +266,7 @@
 				PROJECT_UNIQUE_VALUE = S576E1EZ;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				WATCHOS_DEPLOYMENT_TARGET = 27.0;
 				XROS_DEPLOYMENT_TARGET = 27.0;
 			};
