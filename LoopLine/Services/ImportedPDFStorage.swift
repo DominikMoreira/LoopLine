@@ -1,6 +1,14 @@
 import Foundation
 
 enum ImportedPDFStorage {
+    static func fileURL(for project: Project) -> URL? {
+        guard project.sourceType == .pdf, let storedReference = project.sourceFilePath else {
+            return nil
+        }
+
+        return fileURL(for: storedReference)
+    }
+
     static func directoryURL() throws -> URL {
         let applicationSupportDirectory = try FileManager.default.url(
             for: .applicationSupportDirectory,

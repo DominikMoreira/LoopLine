@@ -10,11 +10,7 @@ final class PDFReadingViewModel {
     var markupError: PDFMarkupError?
 
     func pdfURL(for project: Project) -> URL? {
-        guard project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath else {
-            return nil
-        }
-
-        return ImportedPDFStorage.fileURL(for: sourceFilePath)
+        ImportedPDFStorage.fileURL(for: project)
     }
 
     func selectedMetricValue(for project: Project) -> Int {
