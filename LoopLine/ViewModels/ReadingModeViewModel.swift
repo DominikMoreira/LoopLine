@@ -35,9 +35,15 @@ final class ReadingModeViewModel {
 
     func reminderText(for project: Project) -> String {
         if let note = currentRowNotes(for: project).first {
-            return "Row \(project.currentRow) - \(note.text)"
+            return String(
+                localized: "Row \(project.currentRow) - \(note.text)",
+                comment: "Current row followed by its reminder text."
+            )
         }
-        return "Row \(project.currentRow) - no reminders"
+        return String(
+            localized: "Row \(project.currentRow) - no reminders",
+            comment: "Current row with a message indicating that it has no reminders."
+        )
     }
 
     func canIncreaseRow(for project: Project) -> Bool {
