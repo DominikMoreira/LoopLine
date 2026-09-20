@@ -76,8 +76,8 @@ final class PDFReadingViewModel {
 
     var markupHintText: String {
         isMarkupActive
-        ? "Choose a tool from the palette, then draw with finger or Apple Pencil"
-        : "Pinch to zoom - drag to pan"
+        ? String(localized: "Choose a tool from the palette, then draw with finger or Apple Pencil")
+        : String(localized: "Pinch to zoom - drag to pan")
     }
 
     private func save(_ modelContext: ModelContext) {

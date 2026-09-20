@@ -559,9 +559,15 @@ struct AddNoteView: View {
                             .foregroundStyle(LoopLineTheme.secondaryText)
                     }
 
-                    Text(viewModel.draft.trimmedText.isEmpty ? "Your note preview will appear here." : viewModel.draft.trimmedText)
-                        .font(.body)
-                        .foregroundStyle(viewModel.draft.trimmedText.isEmpty ? LoopLineTheme.secondaryText : LoopLineTheme.primaryText)
+                    Group {
+                        if viewModel.draft.trimmedText.isEmpty {
+                            Text("Your note preview will appear here.")
+                        } else {
+                            Text(verbatim: viewModel.draft.trimmedText)
+                        }
+                    }
+                    .font(.body)
+                    .foregroundStyle(viewModel.draft.trimmedText.isEmpty ? LoopLineTheme.secondaryText : LoopLineTheme.primaryText)
                 }
 
                 Spacer()
