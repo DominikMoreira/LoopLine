@@ -28,11 +28,111 @@ final class ProjectPersistenceTests: XCTestCase {
     }
 
     @MainActor
+    func testNewProjectTitleAndPatternValidation() {
+        var draft = NewProjectDraft()
+        XCTAssertFalse(draft.isValid)
+
+        draft.name = "   \n"
+        draft.setPastedText("Knit one row")
+        XCTAssertFalse(draft.isValid)
+
+        draft.name = "  Scarf  "
+        XCTAssertTrue(draft.isValid)
+        XCTAssertEqual(draft.trimmedName, "Scarf")
+    }
+
+    @MainActor
+    func testCancelledPickersPreserveFormState() {
+        let viewModel = CreateProjectViewModel()
+        viewModel.draft.name = "Scarf"
+        viewModel.draft.subtitle = "For Alex"
+
+        viewModel.importPDF(from: .failure(CocoaError(.userCancelled)))
+        viewModel.importImage(from: nil)
+
+        XCTAssertEqual(viewModel.draft.name, "Scarf")
+        XCTAssertEqual(viewModel.draft.subtitle, "For Alex")
+        XCTAssertNil(viewModel.errorMessage)
+    }
+
+    @MainActor
+    func testCancellingTextEditingDoesNotReplaceSavedText() {
+        let viewModel = CreateProjectViewModel()
+        viewModel.savePatternText("Original pattern")
+        viewModel.showTextEditor()
+
+        XCTAssertEqual(viewModel.draft.sourceText, "Original pattern")
+        XCTAssertEqual(viewModel.draft.sourceType, .text)
+    }
+
+    @MainActor
+    func testPatternSourceTransitionsAndRemoval() {
+        let viewModel = CreateProjectViewModel()
+
+        viewModel.adoptPDF(path: "pattern.pdf", fileName: "Cable.pdf")
+        XCTAssertEqual(viewModel.draft.sourceType, .pdf)
+        XCTAssertEqual(viewModel.draft.sourceFileName, "Cable.pdf")
+
+        viewModel.adoptImage(path: "photo.jpg", fileName: "photo.jpg")
+        XCTAssertEqual(viewModel.draft.sourceType, .image)
+        XCTAssertEqual(viewModel.draft.imageFilePath, "photo.jpg")
+
+        viewModel.savePatternText("Row 1: knit")
+        XCTAssertEqual(viewModel.draft.sourceType, .text)
+        XCTAssertEqual(viewModel.draft.sourceText, "Row 1: knit")
+
+        viewModel.removeSelectedSource()
+        XCTAssertNil(viewModel.draft.sourceType)
+        XCTAssertFalse(viewModel.draft.isValid)
+    }
+
+    @MainActor
+    func testCreateProjectPersistsTrimmedFormAndPattern() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let viewModel = ProjectListViewModel()
+        var draft = NewProjectDraft()
+        draft.name = "  Cable Hat  "
+        draft.subtitle = "  Winter gift  "
+        draft.setPastedText("  Row 1: knit  ")
+
+        try viewModel.createProject(from: draft, in: context)
+
+        let savedProject = try XCTUnwrap(try context.fetch(FetchDescriptor<Project>()).first)
+        XCTAssertEqual(savedProject.name, "Cable Hat")
+        XCTAssertEqual(savedProject.subtitle, "Winter gift")
+        XCTAssertEqual(savedProject.sourceType, .text)
+        XCTAssertEqual(savedProject.sourceText, "Row 1: knit")
+        XCTAssertEqual(savedProject.rows, ["Row 1: knit"])
+    }
+
+    @MainActor
+    func testFailedPersistenceKeepsDraftAndShowsError() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let listViewModel = ProjectListViewModel()
+        let createViewModel = CreateProjectViewModel()
+        createViewModel.draft.name = "Scarf"
+        createViewModel.draft.subtitle = "Blue"
+        createViewModel.savePatternText("Knit every row")
+
+        createViewModel.createProject { draft in
+            try listViewModel.createProject(from: draft, in: context) { _ in
+                throw TestError.saveFailed
+            }
+        }
+
+        XCTAssertEqual(createViewModel.draft.name, "Scarf")
+        XCTAssertEqual(createViewModel.draft.subtitle, "Blue")
+        XCTAssertEqual(createViewModel.draft.sourceText, "Knit every row")
+        XCTAssertNotNil(createViewModel.errorMessage)
+        XCTAssertFalse(createViewModel.didCreateProject)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<Project>()).isEmpty)
+    }
+
+    @MainActor
     func testProjectPreservesTrackingValuesAfterSaveAndFetch() throws {
-        let container = try ModelContainer(
-            for: Project.self, ProjectNote.self,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        let container = try makeContainer()
         let context = ModelContext(container)
         let project = Project(
             name: "Aran Cable Sweater",
@@ -45,10 +145,10 @@ final class ProjectPersistenceTests: XCTestCase {
         )
         context.insert(project)
         try context.save()
-        
+
         let freshContext = ModelContext(container)
         let projects = try freshContext.fetch(FetchDescriptor<Project>())
-        
+
         XCTAssertEqual(projects.count, 1)
         let savedProject = try XCTUnwrap(projects.first)
         XCTAssertEqual(savedProject.id, project.id)
@@ -60,5 +160,16 @@ final class ProjectPersistenceTests: XCTestCase {
         XCTAssertEqual(savedProject.currentRow, 12)
         XCTAssertEqual(savedProject.currentStitch, 48)
         XCTAssertEqual(savedProject.repeatCurrent, 3)
+    }
+
+    private func makeContainer() throws -> ModelContainer {
+        try ModelContainer(
+            for: Project.self, ProjectNote.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+    }
+
+    private enum TestError: Error {
+        case saveFailed
     }
 }

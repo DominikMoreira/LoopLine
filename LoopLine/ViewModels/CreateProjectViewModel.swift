@@ -6,7 +6,7 @@ import SwiftUI
 struct NewProjectDraft {
     var name = ""
     var subtitle = ""
-    var sourceType: ImportSource = .text
+    var sourceType: ImportSource?
     var sourceText = ""
     var sourceFilePath: String?
     var sourceFileName: String?
@@ -38,35 +38,53 @@ struct NewProjectDraft {
             sourceFilePath != nil
         case .image:
             imageFilePath != nil
+        case nil:
+            false
         }
     }
 
     mutating func setPastedText(_ text: String) {
+        sourceType = .text
         sourceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         rows = PatternTextNormalizer.rows(from: sourceText)
+        clearPDF()
+        clearImage()
     }
 
-    mutating func clearPastedText() {
+    mutating func setPDF(path: String, fileName: String) {
+        sourceType = .pdf
+        sourceFilePath = path
+        sourceFileName = fileName
+        clearPastedText()
+        clearImage()
+    }
+
+    mutating func setImage(path: String, fileName: String) {
+        sourceType = .image
+        imageFilePath = path
+        imageFileName = fileName
+        clearPastedText()
+        clearPDF()
+    }
+
+    mutating func removeSource() {
+        sourceType = nil
+        clearPastedText()
+        clearPDF()
+        clearImage()
+    }
+
+    private mutating func clearPastedText() {
         sourceText = ""
         rows = []
     }
 
-    mutating func setPDF(path: String, fileName: String) {
-        sourceFilePath = path
-        sourceFileName = fileName
-    }
-
-    mutating func clearPDF() {
+    private mutating func clearPDF() {
         sourceFilePath = nil
         sourceFileName = nil
     }
 
-    mutating func setImage(path: String, fileName: String) {
-        imageFilePath = path
-        imageFileName = fileName
-    }
-
-    mutating func clearImage() {
+    private mutating func clearImage() {
         imageFilePath = nil
         imageFileName = nil
     }
@@ -76,12 +94,15 @@ struct NewProjectDraft {
 @Observable
 final class CreateProjectViewModel {
     var draft = NewProjectDraft()
-    var isShowingTextImport = false
+    var isShowingTextEditor = false
     var isShowingPDFImporter = false
+    var isShowingPhotoPicker = false
+    var isShowingReplacementOptions = false
     var selectedImageItem: PhotosPickerItem?
-    var pdfImportError: String?
-    var imageImportError: String?
+    var errorMessage: String?
+    var isImportingPDF = false
     var isImportingImage = false
+    var isSaving = false
     var didCreateProject = false
 
     @ObservationIgnored private var imageImportTask: Task<Void, Never>?
@@ -89,37 +110,50 @@ final class CreateProjectViewModel {
     @ObservationIgnored private var isDraftActive = true
 
     var canCreateProject: Bool {
-        draft.isValid && !isImportingImage
+        draft.isValid && !isImportingPDF && !isImportingImage && !isSaving
     }
 
-    func markCreated() {
-        didCreateProject = true
-    }
-
-    func setPastedText(_ text: String) {
-        draft.setPastedText(text)
-        isShowingTextImport = false
+    func showTextEditor() {
+        errorMessage = nil
+        isShowingTextEditor = true
     }
 
     func showPDFImporter() {
-        pdfImportError = nil
+        errorMessage = nil
         isShowingPDFImporter = true
     }
 
-    func selectSourceType(_ sourceType: ImportSource) {
-        draft.sourceType = sourceType
-        handleSourceTypeChange(sourceType)
+    func showPhotoPicker() {
+        errorMessage = nil
+        isShowingPhotoPicker = true
+    }
+
+    func savePatternText(_ text: String) {
+        replaceCurrentSource {
+            draft.setPastedText(text)
+        }
+        isShowingTextEditor = false
     }
 
     func importPDF(from result: Result<URL, Error>) {
+        guard !isCancellation(result) else { return }
+
+        isImportingPDF = true
+        defer { isImportingPDF = false }
+
         do {
             let sourceURL = try result.get()
             let localURL = try ImportedPDFStorage.copyIntoStorage(from: sourceURL)
-            ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
-            draft.setPDF(path: localURL.lastPathComponent, fileName: sourceURL.lastPathComponent)
-            pdfImportError = nil
+            adoptPDF(path: localURL.lastPathComponent, fileName: sourceURL.lastPathComponent)
+            errorMessage = nil
         } catch {
-            pdfImportError = "Could not import the selected PDF."
+            errorMessage = String(localized: "Could not import the selected PDF.")
+        }
+    }
+
+    func adoptPDF(path: String, fileName: String) {
+        replaceCurrentSource {
+            draft.setPDF(path: path, fileName: fileName)
         }
     }
 
@@ -130,14 +164,13 @@ final class CreateProjectViewModel {
         let importID = UUID()
         currentImageImportID = importID
         isImportingImage = true
-        imageImportError = nil
+        errorMessage = nil
 
         imageImportTask = Task { [weak self] in
             do {
                 guard let data = try await item.loadTransferable(type: Data.self) else {
                     throw CocoaError(.fileReadCorruptFile)
                 }
-
                 try Task.checkCancellation()
 
                 let localURL = try ImportedImageStorage.saveImageData(data)
@@ -147,17 +180,12 @@ final class CreateProjectViewModel {
                 await MainActor.run {
                     guard let self,
                           self.isDraftActive,
-                          self.currentImageImportID == importID,
-                          self.draft.sourceType == .image else {
+                          self.currentImageImportID == importID else {
                         return
                     }
 
-                    ImportedImageStorage.delete(storedReference: self.draft.imageFilePath)
-                    self.draft.setImage(path: localReference, fileName: localReference)
-                    self.selectedImageItem = nil
-                    self.isImportingImage = false
-                    self.imageImportTask = nil
-                    self.currentImageImportID = nil
+                    self.adoptImage(path: localReference, fileName: localReference)
+                    self.finishImageImport()
                     didAdoptImage = true
                 }
 
@@ -167,21 +195,40 @@ final class CreateProjectViewModel {
             } catch is CancellationError {
                 await MainActor.run {
                     guard let self, self.currentImageImportID == importID else { return }
-                    self.selectedImageItem = nil
-                    self.isImportingImage = false
-                    self.imageImportTask = nil
-                    self.currentImageImportID = nil
+                    self.finishImageImport()
                 }
             } catch {
                 await MainActor.run {
                     guard let self, self.isDraftActive, self.currentImageImportID == importID else { return }
-                    self.imageImportError = "Could not import the selected image."
-                    self.selectedImageItem = nil
-                    self.isImportingImage = false
-                    self.imageImportTask = nil
-                    self.currentImageImportID = nil
+                    self.errorMessage = String(localized: "Could not import the selected photo.")
+                    self.finishImageImport()
                 }
             }
+        }
+    }
+
+    func adoptImage(path: String, fileName: String) {
+        replaceCurrentSource {
+            draft.setImage(path: path, fileName: fileName)
+        }
+    }
+
+    func removeSelectedSource() {
+        deleteStoredFilesForCurrentSource()
+        draft.removeSource()
+        errorMessage = nil
+    }
+
+    func createProject(using create: (NewProjectDraft) throws -> Void) {
+        guard canCreateProject else { return }
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            try create(draft)
+            didCreateProject = true
+        } catch {
+            errorMessage = String(localized: "Could not create the project. Please try again.")
         }
     }
 
@@ -193,39 +240,40 @@ final class CreateProjectViewModel {
     func cleanupDraftFiles() {
         isDraftActive = false
         imageImportTask?.cancel()
-        imageImportTask = nil
-        currentImageImportID = nil
-        isImportingImage = false
-        selectedImageItem = nil
-
+        finishImageImport()
         ProjectCleanupService.deleteDraftFiles(
             pdfReference: draft.sourceFilePath,
             imageReference: draft.imageFilePath
         )
     }
 
-    private func handleSourceTypeChange(_ sourceType: ImportSource) {
-        if sourceType != .text {
-            draft.clearPastedText()
-            isShowingTextImport = false
-        }
+    private func replaceCurrentSource(_ update: () -> Void) {
+        deleteStoredFilesForCurrentSource()
+        update()
+        isShowingReplacementOptions = false
+    }
 
-        if sourceType != .pdf {
+    private func deleteStoredFilesForCurrentSource() {
+        switch draft.sourceType {
+        case .pdf:
             ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
-            draft.clearPDF()
-            isShowingPDFImporter = false
-            pdfImportError = nil
-        }
-
-        if sourceType != .image {
-            imageImportTask?.cancel()
-            imageImportTask = nil
-            currentImageImportID = nil
+        case .image:
             ImportedImageStorage.delete(storedReference: draft.imageFilePath)
-            draft.clearImage()
-            selectedImageItem = nil
-            imageImportError = nil
-            isImportingImage = false
+        case .text, nil:
+            break
         }
+    }
+
+    private func finishImageImport() {
+        selectedImageItem = nil
+        isImportingImage = false
+        imageImportTask = nil
+        currentImageImportID = nil
+    }
+
+    private func isCancellation(_ result: Result<URL, Error>) -> Bool {
+        guard case .failure(let error) = result else { return false }
+        let cocoaError = error as? CocoaError
+        return cocoaError?.code == .userCancelled
     }
 }

@@ -295,17 +295,28 @@ struct PastedTextImportView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 14) {
-                LoopLineFieldLabel(text: "Pattern Text")
-                TextEditor(text: $text)
-                    .frame(minHeight: 280)
-                    .padding(10)
-                    .scrollContentBackground(.hidden)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $text)
+                        .frame(minHeight: 280)
+                        .padding(10)
+                        .scrollContentBackground(.hidden)
+                        .textInputAutocapitalization(.sentences)
+                        .accessibilityLabel("Pattern Text")
+
+                    if text.isEmpty {
+                        Text("Write or paste your pattern instructions")
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 18)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
                     }
-                    .textInputAutocapitalization(.sentences)
+                }
+                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                }
 
                 Text("Each non-empty line becomes a tracked row.")
                     .font(.caption)
@@ -315,7 +326,7 @@ struct PastedTextImportView: View {
             }
             .padding(24)
             .background(LoopLineTheme.appBackground.ignoresSafeArea())
-            .navigationTitle("Import Text")
+            .navigationTitle("Pattern Text")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -325,23 +336,11 @@ struct PastedTextImportView: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Import") {
+                    Button("Save") {
                         onImport(trimmedText)
                     }
                     .disabled(!canImport)
                 }
-            }
-            .safeAreaInset(edge: .bottom) {
-                Button("Import Text") {
-                    onImport(trimmedText)
-                }
-                .buttonStyle(LoopLinePrimaryButtonStyle())
-                .disabled(!canImport)
-                .opacity(canImport ? 1 : 0.45)
-                .padding(.horizontal, 24)
-                .padding(.top, 14)
-                .padding(.bottom, 12)
-                .background(.regularMaterial)
             }
         }
     }
