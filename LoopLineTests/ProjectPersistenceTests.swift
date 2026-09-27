@@ -11,6 +11,23 @@ import XCTest
 
 final class ProjectPersistenceTests: XCTestCase {
     @MainActor
+    func testPDFURLRequiresPDFSourceAndExistingFile() throws {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("LoopLine-PDF-Resolver-\(UUID().uuidString).pdf")
+        try Data().write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+
+        let pdfProject = Project(name: "PDF", sourceType: .pdf, sourceFilePath: fileURL.path)
+        XCTAssertEqual(ImportedPDFStorage.fileURL(for: pdfProject), fileURL)
+
+        let textProject = Project(name: "Text", sourceType: .text, sourceFilePath: fileURL.path)
+        XCTAssertNil(ImportedPDFStorage.fileURL(for: textProject))
+
+        let missingPDFProject = Project(name: "Missing PDF", sourceType: .pdf)
+        XCTAssertNil(ImportedPDFStorage.fileURL(for: missingPDFProject))
+    }
+
+    @MainActor
     func testProjectPreservesTrackingValuesAfterSaveAndFetch() throws {
         let container = try ModelContainer(
             for: Project.self, ProjectNote.self,

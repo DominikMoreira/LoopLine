@@ -62,12 +62,19 @@ struct ProjectDetailView: View {
     private var mediaHeader: some View {
         Group {
             if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
-                StoredPDFPreview(storedReference: sourceFilePath, height: 190)
-                    .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                if ImportedPDFStorage.fileURL(for: project) != nil {
+                    NavigationLink {
+                        PDFReadingView(project: project)
+                    } label: {
+                        pdfPreview(storedReference: sourceFilePath)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open PDF instructions")
+                    .accessibilityIdentifier("openPDFPreview")
+                } else {
+                    pdfPreview(storedReference: sourceFilePath)
+                }
             } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
                 StoredImagePreview(storedReference: sourceFilePath, height: 190)
                     .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
@@ -80,6 +87,15 @@ struct ProjectDetailView: View {
                     .frame(height: 190)
             }
         }
+    }
+
+    private func pdfPreview(storedReference: String) -> some View {
+        StoredPDFPreview(storedReference: storedReference, height: 190)
+            .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            }
     }
 
     private var titleBlock: some View {
