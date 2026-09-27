@@ -29,24 +29,37 @@ final class ProjectListViewModel {
         isShowingCreateProject = true
     }
 
-    func createProject(from draft: NewProjectDraft, in modelContext: ModelContext) {
+    func createProject(
+        from draft: NewProjectDraft,
+        in modelContext: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        guard draft.isValid, let sourceType = draft.sourceType else {
+            throw CreateProjectError.invalidDraft
+        }
+
         let project = Project(
             name: draft.trimmedName,
             subtitle: draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle,
-            sourceType: draft.sourceType,
+            sourceType: sourceType,
             currentRow: 0,
             repeatCurrent: 0,
             currentStitch: 0,
             repeatTotal: nil,
-            rows: draft.sourceType == .text ? draft.rows : [],
-            sourceText: draft.sourceType == .text && !draft.trimmedSourceText.isEmpty ? draft.trimmedSourceText : nil,
-            sourceFilePath: sourceFilePath(from: draft),
+            rows: sourceType == .text ? draft.rows : [],
+            sourceText: sourceType == .text && !draft.trimmedSourceText.isEmpty ? draft.trimmedSourceText : nil,
+            sourceFilePath: sourceFilePath(from: draft, sourceType: sourceType),
             notes: []
         )
 
         modelContext.insert(project)
-        save(modelContext)
-        isShowingCreateProject = false
+        do {
+            try save(modelContext)
+            isShowingCreateProject = false
+        } catch {
+            modelContext.delete(project)
+            throw error
+        }
     }
 
     func requestDeletion(for project: Project) {
@@ -61,8 +74,8 @@ final class ProjectListViewModel {
         save(modelContext)
     }
 
-    private func sourceFilePath(from draft: NewProjectDraft) -> String? {
-        switch draft.sourceType {
+    private func sourceFilePath(from draft: NewProjectDraft, sourceType: ImportSource) -> String? {
+        switch sourceType {
         case .pdf:
             draft.sourceFilePath
         case .image:
@@ -75,4 +88,8 @@ final class ProjectListViewModel {
     private func save(_ modelContext: ModelContext) {
         try? modelContext.save()
     }
+}
+
+private enum CreateProjectError: Error {
+    case invalidDraft
 }

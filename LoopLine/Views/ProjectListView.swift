@@ -27,7 +27,7 @@ struct ProjectListView: View {
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $viewModel.isShowingCreateProject) {
                 CreateProjectView { draft in
-                    viewModel.createProject(from: draft, in: modelContext)
+                    try viewModel.createProject(from: draft, in: modelContext)
                 }
             }
             .alert("Delete Project?", isPresented: $viewModel.isShowingDeleteConfirmation) {
@@ -228,18 +228,16 @@ private struct CreateProjectView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel = CreateProjectViewModel()
 
-    let onCreate: (NewProjectDraft) -> Void
+    let onCreate: (NewProjectDraft) throws -> Void
 
     var body: some View {
         @Bindable var viewModel = viewModel
 
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 30) {
                     projectInfoSection
-                    stepIndicator
-                    sourceSelectionSection
-                    selectedSourceSection
+                    patternSection
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
@@ -258,10 +256,15 @@ private struct CreateProjectView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 Button {
-                    viewModel.markCreated()
-                    onCreate(viewModel.draft)
+                    viewModel.createProject(using: onCreate)
                 } label: {
-                    Text("Create Project")
+                    if viewModel.isSaving {
+                        ProgressView()
+                            .tint(LoopLineTheme.primaryActionForeground)
+                            .accessibilityLabel("Creating project")
+                    } else {
+                        Text("Create Project")
+                    }
                 }
                 .buttonStyle(LoopLinePrimaryButtonStyle())
                 .disabled(!viewModel.canCreateProject)
@@ -271,9 +274,9 @@ private struct CreateProjectView: View {
                 .padding(.bottom, 12)
                 .background(.regularMaterial)
             }
-            .sheet(isPresented: $viewModel.isShowingTextImport) {
+            .sheet(isPresented: $viewModel.isShowingTextEditor) {
                 PastedTextImportView(initialText: viewModel.draft.sourceText) { text in
-                    viewModel.setPastedText(text)
+                    viewModel.savePatternText(text)
                 }
             }
             .fileImporter(
@@ -282,8 +285,27 @@ private struct CreateProjectView: View {
             ) { result in
                 viewModel.importPDF(from: result)
             }
+            .photosPicker(
+                isPresented: $viewModel.isShowingPhotoPicker,
+                selection: $viewModel.selectedImageItem,
+                matching: .images
+            )
             .onChange(of: viewModel.selectedImageItem) { _, newItem in
                 viewModel.importImage(from: newItem)
+            }
+            .confirmationDialog("Replace Pattern", isPresented: $viewModel.isShowingReplacementOptions) {
+                Button("Import PDF") {
+                    viewModel.showPDFImporter()
+                }
+                Button("Choose Photo") {
+                    viewModel.showPhotoPicker()
+                }
+                Button("Write or Paste Text") {
+                    viewModel.showTextEditor()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Choose a new pattern source. Your current pattern stays in place until the replacement succeeds.")
             }
             .onDisappear {
                 viewModel.cleanupDraftFilesIfNeeded()
@@ -295,7 +317,7 @@ private struct CreateProjectView: View {
         @Bindable var viewModel = viewModel
 
         return VStack(alignment: .leading, spacing: 16) {
-            LoopLineFieldLabel(text: "Project name")
+            LoopLineFieldLabel(text: "Project title")
             TextField("Aran Cable Sweater", text: $viewModel.draft.name)
                 .font(.title3)
                 .textFieldStyle(.plain)
@@ -315,192 +337,205 @@ private struct CreateProjectView: View {
         }
     }
 
-    private var stepIndicator: some View {
-        HStack(spacing: 10) {
-            Capsule()
-                .fill(LoopLineTheme.primaryActionBackground)
-                .frame(width: 38, height: 8)
-            Capsule()
-                .fill(LoopLineTheme.progressTrack)
-                .frame(width: 38, height: 8)
+    private var patternSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            LoopLineSectionHeader(title: "Add a pattern")
+
+            if viewModel.draft.sourceType == nil {
+                importActions
+            } else {
+                selectedSourcePreview
+            }
+
+            if viewModel.isImportingPDF {
+                ProgressView("Importing PDF…")
+            } else if viewModel.isImportingImage {
+                ProgressView("Importing photo…")
+            }
+
+            if let errorMessage = viewModel.errorMessage {
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(LoopLineTheme.destructive)
+                    .accessibilityLabel("Error: \(errorMessage)")
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 4)
     }
 
-    private var sourceSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            LoopLineSectionHeader(title: "Choose how to add your pattern")
-
-            ForEach(ImportSource.allCases, id: \.self) { sourceType in
-                Button {
-                    viewModel.selectSourceType(sourceType)
-                } label: {
-                    SourceOptionRow(
-                        sourceType: sourceType,
-                        isSelected: viewModel.draft.sourceType == sourceType
-                    )
-                }
-                .buttonStyle(.plain)
+    private var importActions: some View {
+        VStack(spacing: 10) {
+            Button {
+                viewModel.showPDFImporter()
+            } label: {
+                PatternImportAction(
+                    title: "Import PDF",
+                    description: "Choose a PDF from Files",
+                    systemImage: "doc.fill"
+                )
             }
+            .buttonStyle(.plain)
+
+            Button {
+                viewModel.showPhotoPicker()
+            } label: {
+                PatternImportAction(
+                    title: "Choose Photo",
+                    description: "Select one photo or screenshot",
+                    systemImage: "photo"
+                )
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                viewModel.showTextEditor()
+            } label: {
+                PatternImportAction(
+                    title: "Write or Paste Text",
+                    description: "Enter pattern instructions",
+                    systemImage: "text.alignleft"
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .disabled(viewModel.isImportingPDF || viewModel.isImportingImage)
+    }
+
+    private var selectedSourcePreview: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 14) {
+                sourcePreview
+                sourceSummary
+                Spacer(minLength: 0)
+            }
+
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    previewActions
+                }
+                VStack(spacing: 8) {
+                    previewActions
+                }
+            }
+        }
+        .padding(16)
+        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
         }
     }
 
     @ViewBuilder
-    private var selectedSourceSection: some View {
-        @Bindable var viewModel = viewModel
-
-        switch viewModel.draft.sourceType {
-        case .text:
-            VStack(alignment: .leading, spacing: 12) {
-                Button(viewModel.draft.trimmedSourceText.isEmpty ? "Enter Pasted Text" : "Edit Pasted Text") {
-                    viewModel.isShowingTextImport = true
-                }
-                .buttonStyle(LoopLineSecondaryButtonStyle())
-
-                Text(viewModel.draft.rows.isEmpty ? "Pattern text is required for pasted text projects." : "\(viewModel.draft.rows.count) rows ready to import")
-                    .font(.caption)
-                    .foregroundStyle(LoopLineTheme.secondaryText)
-            }
-        case .pdf:
-            VStack(alignment: .leading, spacing: 12) {
-                Button(viewModel.draft.sourceFileName == nil ? "Choose PDF" : "Choose Different PDF") {
-                    viewModel.showPDFImporter()
-                }
-                .buttonStyle(LoopLineSecondaryButtonStyle())
-
-                sourceStatus(
-                    fileName: viewModel.draft.sourceFileName,
-                    emptyText: "A PDF is required for PDF projects.",
-                    errorText: viewModel.pdfImportError,
-                    iconName: "doc.richtext"
-                )
-            }
-        case .image:
-            let imageButtonTitle: LocalizedStringResource = viewModel.draft.imageFileName == nil
-                ? "Choose Image"
-                : "Choose Different Image"
-
-            VStack(alignment: .leading, spacing: 12) {
-                PhotosPicker(
-                    selection: Binding(
-                        get: { viewModel.selectedImageItem },
-                        set: { viewModel.selectedImageItem = $0 }
-                    ),
-                    matching: .images
-                ) {
-                    Text(imageButtonTitle)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(LoopLineSecondaryButtonStyle())
-                .disabled(viewModel.isImportingImage)
-
-                if viewModel.isImportingImage {
-                    ProgressView("Importing image...")
-                } else if let imageFilePath = viewModel.draft.imageFilePath {
-                    StoredImagePreview(storedReference: imageFilePath, height: 180)
-                    .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
-
-                    sourceStatus(
-                        fileName: viewModel.draft.imageFileName,
-                        emptyText: "An image is required for image projects.",
-                        errorText: viewModel.imageImportError,
-                        iconName: "photo"
-                    )
-                } else {
-                    sourceStatus(
-                        fileName: nil,
-                        emptyText: "An image is required for image projects.",
-                        errorText: viewModel.imageImportError,
-                        iconName: "photo"
-                    )
-                }
-            }
+    private var sourcePreview: some View {
+        if viewModel.draft.sourceType == .image, let imagePath = viewModel.draft.imageFilePath {
+            StoredImagePreview(storedReference: imagePath, height: 72)
+                .frame(width: 72, height: 72)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .accessibilityLabel("Selected pattern photo")
+        } else {
+            Image(systemName: viewModel.draft.sourceType == .pdf ? "doc.fill" : "text.alignleft")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(LoopLineTheme.accent)
+                .frame(width: 56, height: 56)
+                .background(LoopLineTheme.accentSoft, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .accessibilityHidden(true)
         }
     }
 
-    private func sourceStatus(
-        fileName: String?,
-        emptyText: LocalizedStringResource,
-        errorText: String?,
-        iconName: String
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let fileName {
-                Label(fileName, systemImage: iconName)
-                    .font(.caption)
-                    .foregroundStyle(LoopLineTheme.secondaryText)
-                    .lineLimit(2)
-            } else {
-                Text(emptyText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+    private var sourceSummary: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(sourceTitle)
+                .font(.headline)
+                .foregroundStyle(LoopLineTheme.primaryText)
+            Text(sourceDetail)
+                .font(.subheadline)
+                .foregroundStyle(LoopLineTheme.secondaryText)
+                .lineLimit(2)
+        }
+    }
 
-            if let errorText {
-                Text(errorText)
-                    .font(.caption)
-                    .foregroundStyle(LoopLineTheme.destructive)
-            }
+    @ViewBuilder
+    private var previewActions: some View {
+        Button {
+            viewModel.isShowingReplacementOptions = true
+        } label: {
+            Label("Replace", systemImage: "arrow.triangle.2.circlepath")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel("Replace selected pattern")
+
+        Button(role: .destructive) {
+            viewModel.removeSelectedSource()
+        } label: {
+            Label("Remove", systemImage: "trash")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityLabel("Remove selected pattern")
+    }
+
+    private var sourceTitle: LocalizedStringResource {
+        switch viewModel.draft.sourceType {
+        case .pdf: "PDF"
+        case .image: "Photo"
+        case .text: "Pattern text added"
+        case nil: "Add a pattern"
+        }
+    }
+
+    private var sourceDetail: String {
+        switch viewModel.draft.sourceType {
+        case .pdf:
+            viewModel.draft.sourceFileName ?? String(localized: "PDF selected")
+        case .image:
+            String(localized: "Photo selected")
+        case .text:
+            String(localized: "\(viewModel.draft.trimmedSourceText.count) characters")
+        case nil:
+            ""
         }
     }
 }
 
-private struct SourceOptionRow: View {
-    let sourceType: ImportSource
-    let isSelected: Bool
+private struct PatternImportAction: View {
+    let title: LocalizedStringResource
+    let description: LocalizedStringResource
+    let systemImage: String
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: iconName)
+            Image(systemName: systemImage)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(LoopLineTheme.accent)
                 .frame(width: 44, height: 44)
                 .background(LoopLineTheme.accentSoft, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(sourceType.displayName)
+                Text(title)
                     .font(.headline)
                     .foregroundStyle(LoopLineTheme.primaryText)
                 Text(description)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(LoopLineTheme.secondaryText)
             }
 
             Spacer()
 
-            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                .font(.title3)
-                .foregroundStyle(isSelected ? LoopLineTheme.accent : LoopLineTheme.secondaryText.opacity(0.4))
+            Image(systemName: "chevron.right")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(LoopLineTheme.secondaryText)
+                .accessibilityHidden(true)
         }
         .padding(14)
         .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                .stroke(isSelected ? LoopLineTheme.accent : LoopLineTheme.subtleStroke, lineWidth: isSelected ? 1.5 : 1)
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
         }
-    }
-
-    private var iconName: String {
-        switch sourceType {
-        case .pdf:
-            "doc.richtext"
-        case .image:
-            "photo"
-        case .text:
-            "text.alignleft"
-        }
-    }
-
-    private var description: LocalizedStringResource {
-        switch sourceType {
-        case .pdf:
-            "Import a saved pattern PDF."
-        case .image:
-            "Use a photo or screenshot."
-        case .text:
-            "Paste plain pattern text."
-        }
+        .accessibilityElement(children: .combine)
     }
 }
 
