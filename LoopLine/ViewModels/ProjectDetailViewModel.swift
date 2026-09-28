@@ -22,6 +22,16 @@ struct NoteDraft {
         !trimmedText.isEmpty && hasValidRowNumber
     }
 
+    init(text: String = "", rowNumberText: String = "") {
+        self.text = text
+        self.rowNumberText = rowNumberText
+    }
+
+    init(note: ProjectNote) {
+        text = note.text
+        rowNumberText = note.rowNumber.map(String.init) ?? ""
+    }
+
     private var hasValidRowNumber: Bool {
         let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedRow.isEmpty || rowNumber != nil
@@ -157,6 +167,17 @@ final class ProjectDetailViewModel {
         isShowingAddNote = false
     }
 
+    func updateNote(_ note: ProjectNote, from draft: NoteDraft, in modelContext: ModelContext) {
+        note.text = draft.trimmedText
+        note.rowNumber = draft.rowNumber
+        save(modelContext)
+    }
+
+    func deleteNote(_ note: ProjectNote, in modelContext: ModelContext) {
+        modelContext.delete(note)
+        save(modelContext)
+    }
+
     func deleteProject(_ project: Project, in modelContext: ModelContext) {
         ProjectCleanupService.deleteImportedSource(for: project)
         modelContext.delete(project)
@@ -210,6 +231,11 @@ final class AddNoteViewModel {
     init(currentRow: Int) {
         draft = NoteDraft(text: "", rowNumberText: String(currentRow))
         attachesToRow = true
+    }
+
+    init(note: ProjectNote) {
+        draft = NoteDraft(note: note)
+        attachesToRow = note.rowNumber != nil
     }
 
     func setAttachesToRow(_ isAttached: Bool) {
