@@ -1,5 +1,5 @@
 # LoopLine
-LoopLine is a native iOS and iPadOS knitting companion app built with SwiftUI.
+LoopLine is a native iOS and iPadOS knitting companion app built with Swift/SwiftUI.
 It helps knitters keep pattern projects organized, track their progress, and read instructions comfortably while knitting.
 
 ## Features

@@ -162,6 +162,37 @@ final class ProjectPersistenceTests: XCTestCase {
         XCTAssertEqual(savedProject.repeatCurrent, 3)
     }
 
+    @MainActor
+    func testEditingNotePersistsTextAndRow() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let note = ProjectNote(text: "Original", rowNumber: 2)
+        let project = Project(name: "Scarf", sourceType: .text, notes: [note])
+        context.insert(project)
+        try context.save()
+
+        let draft = NoteDraft(text: "  Updated note  ", rowNumberText: "5")
+        ProjectDetailViewModel().updateNote(note, from: draft, in: context)
+
+        let savedNote = try XCTUnwrap(try context.fetch(FetchDescriptor<ProjectNote>()).first)
+        XCTAssertEqual(savedNote.text, "Updated note")
+        XCTAssertEqual(savedNote.rowNumber, 5)
+    }
+
+    @MainActor
+    func testDeletingNoteRemovesItFromPersistence() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let note = ProjectNote(text: "Remove me")
+        let project = Project(name: "Scarf", sourceType: .text, notes: [note])
+        context.insert(project)
+        try context.save()
+
+        ProjectDetailViewModel().deleteNote(note, in: context)
+
+        XCTAssertTrue(try context.fetch(FetchDescriptor<ProjectNote>()).isEmpty)
+    }
+
     private func makeContainer() throws -> ModelContainer {
         try ModelContainer(
             for: Project.self, ProjectNote.self,

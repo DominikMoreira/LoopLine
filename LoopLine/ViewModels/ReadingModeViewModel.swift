@@ -116,6 +116,17 @@ final class ReadingModeViewModel {
         isShowingAddNote = false
     }
 
+    func updateNote(_ note: ProjectNote, from draft: NoteDraft, in modelContext: ModelContext) {
+        note.text = draft.trimmedText
+        note.rowNumber = draft.rowNumber
+        save(modelContext)
+    }
+
+    func deleteNote(_ note: ProjectNote, in modelContext: ModelContext) {
+        modelContext.delete(note)
+        save(modelContext)
+    }
+
     func scrollToActiveRow(for project: Project, with proxy: ScrollViewProxy) {
         guard let activeRowIndex = activeRowIndex(for: project) else { return }
         withAnimation(.easeInOut(duration: 0.2)) {

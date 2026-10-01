@@ -7,6 +7,8 @@ struct ReadingModeView: View {
     @Bindable var project: Project
     @Query private var settings: [AppSettings]
     @State private var viewModel = ReadingModeViewModel()
+    @State private var noteToEdit: ProjectNote?
+    @State private var notePendingDeletion: ProjectNote?
 
     private var appSettings: AppSettings {
         settings.first ?? AppSettings()
@@ -52,6 +54,27 @@ struct ReadingModeView: View {
                 }
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
+            }
+            .sheet(item: $noteToEdit) { note in
+                AddNoteView(note: note) { draft in
+                    viewModel.updateNote(note, from: draft, in: modelContext)
+                    noteToEdit = nil
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+            }
+            .alert("Delete Note?", isPresented: deleteNoteConfirmationBinding) {
+                Button("Delete Note", role: .destructive) {
+                    if let notePendingDeletion {
+                        viewModel.deleteNote(notePendingDeletion, in: modelContext)
+                    }
+                    notePendingDeletion = nil
+                }
+                Button("Cancel", role: .cancel) {
+                    notePendingDeletion = nil
+                }
+            } message: {
+                Text("This will permanently delete this note. This cannot be undone.")
             }
             .alert("Reset Counters?", isPresented: $viewModel.isShowingResetConfirmation) {
                 Button("Reset", role: .destructive) {
@@ -184,33 +207,64 @@ struct ReadingModeView: View {
     }
 
     private var reminderStrip: some View {
-        Button {
-            viewModel.isShowingAddNote = true
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "flag.fill")
-                    .foregroundStyle(LoopLineTheme.readingGuide)
+        let notes = viewModel.currentRowNotes(for: project)
 
-                Text(viewModel.reminderText(for: project))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(primaryText)
-                    .lineLimit(1)
+        return HStack(spacing: 10) {
+            Image(systemName: "flag.fill")
+                .foregroundStyle(LoopLineTheme.readingGuide)
 
-                Spacer()
+            Text(viewModel.reminderText(for: project))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(primaryText)
+                .lineLimit(1)
 
-                Text("+ Add")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(LoopLineTheme.accent)
+            Spacer()
+
+            if !notes.isEmpty {
+                Menu {
+                    ForEach(notes) { note in
+                        Menu {
+                            Button("Edit", systemImage: "pencil") {
+                                noteToEdit = note
+                            }
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                notePendingDeletion = note
+                            }
+                        } label: {
+                            Text(note.text)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 32, height: 44)
+                }
+                .accessibilityLabel("Note actions")
             }
-            .padding(.horizontal, 16)
-            .frame(height: 54)
-            .background(stripBackground, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                    .stroke(panelStroke, lineWidth: 1)
+
+            Button("+ Add") {
+                viewModel.isShowingAddNote = true
             }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(LoopLineTheme.accent)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .frame(height: 54)
+        .background(stripBackground, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
+                .stroke(panelStroke, lineWidth: 1)
+        }
+    }
+
+    private var deleteNoteConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { notePendingDeletion != nil },
+            set: { isPresented in
+                if !isPresented {
+                    notePendingDeletion = nil
+                }
+            }
+        )
     }
 
     private var readingBackground: Color {

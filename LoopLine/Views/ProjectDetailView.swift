@@ -7,6 +7,8 @@ struct ProjectDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var project: Project
     @State private var viewModel = ProjectDetailViewModel()
+    @State private var noteToEdit: ProjectNote?
+    @State private var notePendingDeletion: ProjectNote?
 
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -39,6 +41,27 @@ struct ProjectDetailView: View {
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
+        }
+        .sheet(item: $noteToEdit) { note in
+            AddNoteView(note: note) { draft in
+                viewModel.updateNote(note, from: draft, in: modelContext)
+                noteToEdit = nil
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+        }
+        .alert("Delete Note?", isPresented: deleteNoteConfirmationBinding) {
+            Button("Delete Note", role: .destructive) {
+                if let notePendingDeletion {
+                    viewModel.deleteNote(notePendingDeletion, in: modelContext)
+                }
+                notePendingDeletion = nil
+            }
+            Button("Cancel", role: .cancel) {
+                notePendingDeletion = nil
+            }
+        } message: {
+            Text("This will permanently delete this note. This cannot be undone.")
         }
         .alert("Delete Project?", isPresented: $viewModel.isShowingDeleteConfirmation) {
             Button("Delete Project", role: .destructive) {
@@ -189,7 +212,11 @@ struct ProjectDetailView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(project.notes) { note in
-                        NoteRow(note: note)
+                        NoteRow(
+                            note: note,
+                            editAction: { noteToEdit = note },
+                            deleteAction: { notePendingDeletion = note }
+                        )
                         if note.id != project.notes.last?.id {
                             Divider()
                                 .padding(.leading, 46)
@@ -205,6 +232,17 @@ struct ProjectDetailView: View {
                 }
             }
         }
+    }
+
+    private var deleteNoteConfirmationBinding: Binding<Bool> {
+        Binding(
+            get: { notePendingDeletion != nil },
+            set: { isPresented in
+                if !isPresented {
+                    notePendingDeletion = nil
+                }
+            }
+        )
     }
 
     private var trackingSection: some View {
@@ -429,10 +467,21 @@ struct AddNoteView: View {
     @State private var viewModel: AddNoteViewModel
 
     let onSave: (NoteDraft) -> Void
+    private let navigationTitle: LocalizedStringResource
+    private let primaryButtonTitle: LocalizedStringResource
 
     init(currentRow: Int, onSave: @escaping (NoteDraft) -> Void) {
         _viewModel = State(initialValue: AddNoteViewModel(currentRow: currentRow))
         self.onSave = onSave
+        navigationTitle = "Add Note"
+        primaryButtonTitle = "Save Note"
+    }
+
+    init(note: ProjectNote, onSave: @escaping (NoteDraft) -> Void) {
+        _viewModel = State(initialValue: AddNoteViewModel(note: note))
+        self.onSave = onSave
+        navigationTitle = "Edit Note"
+        primaryButtonTitle = "Save Changes"
     }
 
     var body: some View {
@@ -486,7 +535,7 @@ struct AddNoteView: View {
                 .padding(.bottom, 96)
             }
             .background(LoopLineTheme.appBackground.ignoresSafeArea())
-            .navigationTitle("Add Note")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -503,7 +552,7 @@ struct AddNoteView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                Button("Save Note") {
+                Button(primaryButtonTitle) {
                     onSave(viewModel.draft)
                 }
                 .buttonStyle(LoopLinePrimaryButtonStyle())
@@ -599,6 +648,8 @@ struct AddNoteView: View {
 
 private struct NoteRow: View {
     let note: ProjectNote
+    let editAction: () -> Void
+    let deleteAction: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -614,6 +665,15 @@ private struct NoteRow: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer()
+
+            Menu {
+                Button("Edit", systemImage: "pencil", action: editAction)
+                Button("Delete", systemImage: "trash", role: .destructive, action: deleteAction)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .frame(width: 44, height: 44)
+            }
+            .accessibilityLabel("Note actions")
         }
         .padding(.vertical, 14)
     }

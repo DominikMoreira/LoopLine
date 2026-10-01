@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project
-LoopLine is a native SwiftUI iOS/iPadOS knitting companion app Prioritize a small, stable App Store release. Choose simple, practical solutions over speculative or overly abstract architecture.
+LoopLine is a native SwiftUI iOS/iPadOS knitting companion app. Choose simple, practical solutions over speculative or overly abstract architecture.
 
 ## Architecture
 - Use SwiftUI for the UI.
@@ -59,7 +59,6 @@ Do not introduce elaborate test infrastructure, mock frameworks, repositories, o
 - Never work directly on `main` or `master`.
 - The developer creates and checks out the feature branch before Codex starts work.
 - Keep each task limited to one reviewable purpose.
-- Codex may create a local commit only when explicitly asked.
 - Do not push, merge pull requests, change branch protection, or modify CI configuration unless explicitly asked.
 - Do not modify secrets, signing credentials, provisioning profiles, or App Store Connect settings.
 
@@ -67,15 +66,6 @@ When creating a commit:
 - Include only files related to the requested task.
 - Use a concise, imperative commit message.
 - Do not commit generated build output, DerivedData, credentials, or personal Xcode user data.
-
-## Documentation
-Update documentation only when the requested work changes:
-- MVP scope
-- User-visible behavior
-- Architecture or data model
-- Setup, test, or release steps
-
-Keep documentation concise and consistent with the actual implementation.
 
 ## Completion Report
 At the end of each task, report:
