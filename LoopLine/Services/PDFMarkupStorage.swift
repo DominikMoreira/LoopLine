@@ -51,6 +51,101 @@ struct PDFMarkupStroke: Codable, Identifiable {
 
         return false
     }
+
+    func erasing(at point: CGPoint, withRadius radius: CGFloat) -> [PDFMarkupStroke] {
+        guard points.count > 1 else { return [self] }
+
+        let eraserRadius = max(radius, 0)
+        let cgPoints = points.map(\.cgPoint)
+        var fragments = [[PDFMarkupPoint]]()
+        var activeFragment = [PDFMarkupPoint]()
+        var removedPortion = false
+
+        for index in 1..<cgPoints.count {
+            let start = cgPoints[index - 1]
+            let end = cgPoints[index]
+            let visibleSegments = visibleSegments(from: start, to: end, outside: point, radius: eraserRadius)
+
+            if visibleSegments.count != 1 || visibleSegments.first?.lowerBound != 0 || visibleSegments.first?.upperBound != 1 {
+                removedPortion = true
+            }
+
+            for segment in visibleSegments {
+                let segmentStart = start.interpolated(toward: end, at: segment.lowerBound)
+                let segmentEnd = start.interpolated(toward: end, at: segment.upperBound)
+
+                if let lastPoint = activeFragment.last?.cgPoint, lastPoint.isApproximatelyEqual(to: segmentStart) {
+                    activeFragment.append(PDFMarkupPoint(segmentEnd))
+                } else {
+                    if activeFragment.count > 1 {
+                        fragments.append(activeFragment)
+                    }
+                    activeFragment = [PDFMarkupPoint(segmentStart), PDFMarkupPoint(segmentEnd)]
+                }
+            }
+
+            if visibleSegments.isEmpty, activeFragment.count > 1 {
+                fragments.append(activeFragment)
+                activeFragment.removeAll()
+            }
+        }
+
+        if activeFragment.count > 1 {
+            fragments.append(activeFragment)
+        }
+
+        guard removedPortion else { return [self] }
+
+        return fragments.map {
+            PDFMarkupStroke(
+                pageIndex: pageIndex,
+                points: $0,
+                color: color,
+                width: width,
+                isMarker: isMarker
+            )
+        }
+    }
+
+    private func visibleSegments(
+        from start: CGPoint,
+        to end: CGPoint,
+        outside center: CGPoint,
+        radius: CGFloat
+    ) -> [ClosedRange<CGFloat>] {
+        let deltaX = end.x - start.x
+        let deltaY = end.y - start.y
+        let lengthSquared = deltaX * deltaX + deltaY * deltaY
+        guard lengthSquared > 0 else {
+            return hypot(start.x - center.x, start.y - center.y) > radius ? [0...1] : []
+        }
+
+        let offsetX = start.x - center.x
+        let offsetY = start.y - center.y
+        let projection = offsetX * deltaX + offsetY * deltaY
+        let discriminant = projection * projection - lengthSquared * (offsetX * offsetX + offsetY * offsetY - radius * radius)
+
+        guard discriminant > 0 else {
+            return [0...1]
+        }
+
+        let root = sqrt(discriminant)
+        let entry = max(0, min(1, (-projection - root) / lengthSquared))
+        let exit = max(0, min(1, (-projection + root) / lengthSquared))
+
+        guard entry < exit else {
+            return [0...1]
+        }
+
+        var segments = [ClosedRange<CGFloat>]()
+        if entry > 0 {
+            segments.append(0...entry)
+        }
+        if exit < 1 {
+            segments.append(exit...1)
+        }
+        return segments
+    }
 }
 
 struct PDFMarkupPoint: Codable {
@@ -104,6 +199,17 @@ struct PDFMarkupColor: Codable {
 }
 
 private extension CGPoint {
+    func interpolated(toward point: CGPoint, at progress: CGFloat) -> CGPoint {
+        CGPoint(
+            x: x + (point.x - x) * progress,
+            y: y + (point.y - y) * progress
+        )
+    }
+
+    func isApproximatelyEqual(to point: CGPoint, tolerance: CGFloat = 0.001) -> Bool {
+        hypot(x - point.x, y - point.y) <= tolerance
+    }
+
     func distance(toSegmentFrom start: CGPoint, to end: CGPoint) -> CGFloat {
         let dx = end.x - start.x
         let dy = end.y - start.y

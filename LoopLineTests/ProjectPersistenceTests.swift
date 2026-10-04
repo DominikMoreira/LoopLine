@@ -6,10 +6,41 @@
 //
 
 import SwiftData
+import UIKit
 import XCTest
 @testable import LoopLine
 
 final class ProjectPersistenceTests: XCTestCase {
+    func testPartialErasingSplitsMarkupStroke() {
+        let stroke = PDFMarkupStroke(
+            pageIndex: 0,
+            points: [PDFMarkupPoint(CGPoint(x: 0, y: 0)), PDFMarkupPoint(CGPoint(x: 100, y: 0))],
+            color: PDFMarkupColor(UIColor(red: 1, green: 0.8, blue: 0, alpha: 0.38)),
+            width: 10,
+            isMarker: true
+        )
+
+        let fragments = stroke.erasing(at: CGPoint(x: 50, y: 0), withRadius: 15)
+
+        XCTAssertEqual(fragments.count, 2)
+        XCTAssertLessThan(fragments[0].points.last!.cgPoint.x, 50)
+        XCTAssertGreaterThan(fragments[1].points.first!.cgPoint.x, 50)
+    }
+
+    func testErasingOutsideMarkupKeepsOriginalStroke() {
+        let stroke = PDFMarkupStroke(
+            pageIndex: 0,
+            points: [PDFMarkupPoint(CGPoint(x: 0, y: 0)), PDFMarkupPoint(CGPoint(x: 100, y: 0))],
+            color: PDFMarkupColor(UIColor(red: 1, green: 0.8, blue: 0, alpha: 0.38)),
+            width: 10,
+            isMarker: true
+        )
+
+        let fragments = stroke.erasing(at: CGPoint(x: 50, y: 50), withRadius: 10)
+
+        XCTAssertEqual(fragments.first?.id, stroke.id)
+    }
+
     @MainActor
     func testPDFURLRequiresPDFSourceAndExistingFile() throws {
         let fileURL = FileManager.default.temporaryDirectory
