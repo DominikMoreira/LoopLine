@@ -268,8 +268,6 @@ private struct PDFKitView: UIViewRepresentable {
     }
 
     func updateUIView(_ pdfView: PDFView, context: Context) {
-        pdfView.autoScales = true
-
         if context.coordinator.url != url || pdfView.document == nil {
             context.coordinator.reset(for: url)
             pdfView.document = PDFDocument(url: url)
