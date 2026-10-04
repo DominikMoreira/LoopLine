@@ -54,9 +54,9 @@
 			path = LoopLineUITests;
 			sourceTree = "<group>";
 		};
-		ADE282A62FF4722800663957 /* Docs */ = {
+		ADE282A62FF4722800663957 /* docs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Docs;
+			path = docs;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -86,7 +86,7 @@
 				AD0402D53058905200CE637A /* Localizable.xcstrings */,
 				ADE282832FF4714200663957 /* AGENTS.md */,
 				ADE282862FF4715000663957 /* README.md */,
-				ADE282A62FF4722800663957 /* Docs */,
+				ADE282A62FF4722800663957 /* docs */,
 				000000000000000000000010 /* LoopLine */,
 				AD769B4D3050C13400463AD1 /* LoopLineTests */,
 				AD769B5E3050C35F00463AD1 /* LoopLineUITests */,
@@ -119,7 +119,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				000000000000000000000010 /* LoopLine */,
-				ADE282A62FF4722800663957 /* Docs */,
+				ADE282A62FF4722800663957 /* docs */,
 			);
 			name = LoopLine;
 			productName = MyApp;
