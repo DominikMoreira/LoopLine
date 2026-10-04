@@ -64,9 +64,9 @@ private struct SettingsForm: View {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Guide opacity")
+                            Text("Text row highlight opacity")
                                 .font(.headline)
-                            Text("Customize row highlight visibility")
+                            Text("Customize the row highlight in text-imported projects")
                                 .font(.caption)
                                 .foregroundStyle(LoopLineTheme.secondaryText)
                         }
