@@ -361,57 +361,94 @@ private struct CounterControlPanel: View {
 
     private var buttonSize: CGFloat {
         if isPrimary {
-            return usesLargeControls ? 76 : 62
+            return usesLargeControls ? 88 : 62
         }
-        return usesLargeControls ? 58 : 48
+        return usesLargeControls ? 70 : 48
     }
 
     var body: some View {
-        HStack(spacing: 16) {
-            Text(label)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(secondaryText)
-                .frame(width: 72, alignment: .leading)
+        if usesLargeControls {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(label)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(secondaryText)
 
-            Button(action: decreaseAction) {
-                Image(systemName: "minus")
-            }
-            .buttonStyle(LoopLineIconButtonStyle(
-                size: buttonSize,
-                foregroundColor: primaryText,
-                backgroundColor: secondaryButtonBackground
-            ))
-            .disabled(!canDecrease)
-            .opacity(canDecrease ? 1 : 0.38)
+                HStack(spacing: 20) {
+                    decreaseButton
 
-            VStack(spacing: 1) {
-                Text(value)
-                    .font((isPrimary ? Font.system(size: 48, weight: .bold) : Font.system(size: 34, weight: .bold)).monospacedDigit())
-                    .foregroundStyle(primaryText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                    counterValue
+                        .frame(minWidth: isPrimary ? 96 : 76)
 
-                if let detail {
-                    Text(detail)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(secondaryText)
+                    increaseButton
                 }
+                .frame(maxWidth: .infinity)
             }
-            .frame(minWidth: isPrimary ? 74 : 58)
+        } else {
+            HStack(spacing: 16) {
+                Text(label)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(secondaryText)
+                    .frame(width: 72, alignment: .leading)
 
-            Button(action: increaseAction) {
-                Image(systemName: "plus")
+                decreaseButton
+
+                counterValue
+                    .frame(minWidth: isPrimary ? 74 : 58)
+
+                increaseButton
+
+                Spacer(minLength: 0)
             }
-            .buttonStyle(LoopLineIconButtonStyle(
-                size: buttonSize,
-                foregroundColor: primaryIncreaseForeground,
-                backgroundColor: primaryIncreaseBackground
-            ))
-            .disabled(!canIncrease)
-            .opacity(canIncrease ? 1 : 0.38)
-
-            Spacer(minLength: 0)
         }
+    }
+
+    private var decreaseButton: some View {
+        Button(action: decreaseAction) {
+            Image(systemName: "minus")
+        }
+        .buttonStyle(LoopLineIconButtonStyle(
+            size: buttonSize,
+            foregroundColor: primaryText,
+            backgroundColor: secondaryButtonBackground
+        ))
+        .disabled(!canDecrease)
+        .opacity(canDecrease ? 1 : 0.38)
+    }
+
+    private var increaseButton: some View {
+        Button(action: increaseAction) {
+            Image(systemName: "plus")
+        }
+        .buttonStyle(LoopLineIconButtonStyle(
+            size: buttonSize,
+            foregroundColor: primaryIncreaseForeground,
+            backgroundColor: primaryIncreaseBackground
+        ))
+        .disabled(!canIncrease)
+        .opacity(canIncrease ? 1 : 0.38)
+    }
+
+    private var counterValue: some View {
+        VStack(spacing: 1) {
+            Text(value)
+                .font(valueFont)
+                .foregroundStyle(primaryText)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+
+            if let detail {
+                Text(detail)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(secondaryText)
+            }
+        }
+    }
+
+    private var valueFont: Font {
+        if usesLargeControls {
+            return (isPrimary ? Font.largeTitle : Font.title).weight(.bold).monospacedDigit()
+        }
+        return (isPrimary ? Font.system(size: 48, weight: .bold) : Font.system(size: 34, weight: .bold)).monospacedDigit()
     }
 
     private var primaryText: Color {
