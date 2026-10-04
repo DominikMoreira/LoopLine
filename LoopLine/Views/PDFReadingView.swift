@@ -516,23 +516,43 @@ private struct PDFKitView: UIViewRepresentable {
                 return
             }
 
-            let removalDistance = max(selectedLineWidth, 18)
-            let strokeIDsToRemove = pageStrokes
-                .filter { $0.contains(point, within: removalDistance) }
-                .map(\.id)
+            var updatedStrokes = [PDFMarkupStroke]()
+            var didEraseMarkup = false
 
-            guard !strokeIDsToRemove.isEmpty else { return }
+            for stroke in pageStrokes {
+                let eraserRadius = max(selectedEraserWidth, 18) + CGFloat(stroke.width) / 2
+                let fragments = stroke.erasing(at: point, withRadius: eraserRadius)
 
-            storedStrokesByPage[pageIndex] = pageStrokes.filter { !strokeIDsToRemove.contains($0.id) }
-            strokeIDsToRemove.forEach { strokeID in
-                if let annotation = annotationsByStrokeID[strokeID] {
+                guard fragments.count != 1 || fragments[0].id != stroke.id else {
+                    updatedStrokes.append(stroke)
+                    continue
+                }
+
+                didEraseMarkup = true
+                if let annotation = annotationsByStrokeID[stroke.id] {
                     annotation.shouldDisplay = false
                     page.removeAnnotation(annotation)
-                    annotationsByStrokeID[strokeID] = nil
+                    annotationsByStrokeID[stroke.id] = nil
+                }
+
+                for fragment in fragments {
+                    let annotation = PDFMarkupAnnotation(stroke: fragment, pageBounds: page.bounds(for: .cropBox))
+                    page.addAnnotation(annotation)
+                    annotationsByStrokeID[fragment.id] = annotation
+                    updatedStrokes.append(fragment)
                 }
             }
+
+            guard didEraseMarkup else { return }
+
+            storedStrokesByPage[pageIndex] = updatedStrokes
             notifyMarkupChanged(on: page)
             scheduleMarkupSave()
+        }
+
+        private var selectedEraserWidth: CGFloat {
+            guard let tool = currentTool as? PKEraserTool else { return 18 }
+            return max(tool.width, 1)
         }
 
         private func loadStoredMarkupsIfNeeded(in pdfView: PDFView) {
