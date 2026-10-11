@@ -8,21 +8,24 @@
   <style>
     :root {
       color-scheme: light dark;
-      --accent: #8f5b7a;
-      --background: #fffafb;
-      --surface: #ffffff;
-      --text: #252124;
-      --muted: #655f63;
-      --border: #e8dfe4;
+      --accent: #2e7a6e;
+      --accent-soft: #def0eb;
+      --background: #f7f0e6;
+      --surface: #fffdf7;
+      --text: #1a1a17;
+      --muted: #857d70;
+      --border: #dbd1c2;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --background: #1d191c;
-        --surface: #282328;
-        --text: #f5eef2;
-        --muted: #cfc3ca;
-        --border: #4a4047;
+        --accent: #6bc7b3;
+        --accent-soft: #1c3b36;
+        --background: #141412;
+        --surface: #26241f;
+        --text: #f0ebe0;
+        --muted: #a89e8f;
+        --border: #544d42;
       }
     }
 
@@ -87,6 +90,10 @@
     a {
       color: var(--accent);
       font-weight: 650;
+    }
+
+    a:hover {
+      background: var(--accent-soft);
     }
 
     .muted {
