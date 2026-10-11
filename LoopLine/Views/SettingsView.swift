@@ -1,6 +1,8 @@
 import Observation
+import MessageUI
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -28,8 +30,11 @@ struct SettingsView: View {
 
 private struct SettingsForm: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
     @Bindable var settings: AppSettings
     let viewModel: SettingsViewModel
+    @State private var isShowingMailComposer = false
+    @State private var isShowingMailUnavailableAlert = false
 
     var body: some View {
         ScrollView {
@@ -42,6 +47,25 @@ private struct SettingsForm: View {
             .padding(.bottom, 32)
         }
         .background(LoopLineTheme.appBackground.ignoresSafeArea())
+        .sheet(isPresented: $isShowingMailComposer) {
+            FeedbackMailComposer(
+                isPresented: $isShowingMailComposer,
+                recipient: FeedbackConfiguration.feedbackEmailAddress,
+                subject: String(
+                    localized: "LoopLine – Product Improvement",
+                    comment: "Subject line for an email suggesting an improvement to LoopLine."
+                ),
+                messageBody: viewModel.feedbackMailBody
+            )
+        }
+        .alert("Mail is unavailable", isPresented: $isShowingMailUnavailableAlert) {
+            Button("Copy email address") {
+                UIPasteboard.general.string = FeedbackConfiguration.feedbackEmailAddress
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Set up Mail to send feedback, or email us at \(FeedbackConfiguration.feedbackEmailAddress).")
+        }
     }
 
     private var readingModeSection: some View {
@@ -114,6 +138,26 @@ private struct SettingsForm: View {
                 Text("Version \(viewModel.appVersion)")
                     .font(.subheadline)
                     .foregroundStyle(LoopLineTheme.secondaryText)
+
+                Divider()
+                    .padding(.leading, 16)
+
+                SettingsNavigationRow(title: "Privacy Policy") {
+                    if let privacyPolicyURL = FeedbackConfiguration.privacyPolicyURL {
+                        openURL(privacyPolicyURL)
+                    }
+                }
+
+                Divider()
+                    .padding(.leading, 16)
+
+                SettingsNavigationRow(title: "Suggest an improvement") {
+                    if MFMailComposeViewController.canSendMail() {
+                        isShowingMailComposer = true
+                    } else {
+                        isShowingMailUnavailableAlert = true
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
@@ -144,6 +188,30 @@ private struct SettingsToggleRow: View {
         }
         .padding(16)
         .tint(LoopLineTheme.accent)
+    }
+}
+
+private struct SettingsNavigationRow: View {
+    let title: LocalizedStringResource
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.body)
+                    .foregroundStyle(LoopLineTheme.primaryText)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(LoopLineTheme.secondaryText)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftData
+import UIKit
 
 @MainActor
 @Observable
@@ -27,6 +28,13 @@ final class SettingsViewModel {
         default:
             return "Unknown"
         }
+    }
+
+    var feedbackMailBody: String {
+        String(
+            localized: "Feedback email body \(appVersion) \(UIDevice.current.systemVersion) \(UIDevice.current.model)",
+            comment: "Prefilled feedback email body. The first placeholder is the app version and build, the second is the iOS version, and the third is the device model."
+        )
     }
 
     private func save(_ modelContext: ModelContext) {
