@@ -20,7 +20,7 @@ struct PDFReadingView: View {
         Group {
             if let pdfURL = viewModel.pdfURL(for: project) {
                 VStack(spacing: 0) {
-                    trackingControls
+                    ReadingTrackingControls(project: project, usesLargeControls: usesLargeControls)
                         .padding(.horizontal, 16)
                         .padding(.top, 12)
                         .padding(.bottom, 10)
@@ -54,7 +54,7 @@ struct PDFReadingView: View {
                 .background(LoopLineTheme.readingBackground.ignoresSafeArea())
             } else {
                 VStack(spacing: 0) {
-                    trackingControls
+                    ReadingTrackingControls(project: project, usesLargeControls: usesLargeControls)
                         .padding(.horizontal, 16)
                         .padding(.top, 12)
                         .padding(.bottom, 10)
@@ -90,130 +90,6 @@ struct PDFReadingView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-        .onAppear {
-            viewModel.restoreSelectedMetric(for: project)
-            viewModel.normalizeTrackingValues(for: project, in: modelContext)
-        }
-    }
-
-    private var trackingControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if usesLargeControls {
-                VStack(alignment: .leading, spacing: 12) {
-                    metricPicker
-
-                    HStack(spacing: 20) {
-                        decreaseButton
-
-                        metricValue
-                            .frame(minWidth: 90)
-
-                        increaseButton
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    if let change = project.lastCounterChange {
-                        LastCounterChangeLabel(change: change)
-                    }
-                }
-            } else {
-                HStack(spacing: 16) {
-                    metricPicker
-
-                    Spacer(minLength: 0)
-
-                    decreaseButton
-
-                    metricValue
-                        .frame(minWidth: 70)
-
-                    increaseButton
-                }
-
-                if let change = project.lastCounterChange {
-                    LastCounterChangeLabel(change: change)
-                }
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(LoopLineTheme.readingPanel, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                .stroke(LoopLineTheme.readingStroke, lineWidth: 1)
-        }
-    }
-
-    private var metricPicker: some View {
-        Menu {
-            ForEach(ReadingTrackingMetric.allCases) { metric in
-                Button(metric.title) {
-                    viewModel.selectMetric(metric, for: project, in: modelContext)
-                }
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Text(viewModel.selectedMetric.title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.bold))
-            }
-            .foregroundStyle(LoopLineTheme.readingPrimaryText)
-            .frame(minWidth: 92, alignment: .leading)
-            .padding(.horizontal, 12)
-            .frame(height: usesLargeControls ? 56 : 48)
-            .background(LoopLineTheme.readingControlFill, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
-        }
-        .accessibilityLabel("Tracking metric")
-        .accessibilityValue(viewModel.selectedMetric.title)
-    }
-
-    private var decreaseButton: some View {
-        Button {
-            viewModel.decrementSelectedMetric(for: project, in: modelContext)
-        } label: {
-            Image(systemName: "minus")
-        }
-        .buttonStyle(LoopLineIconButtonStyle(
-            size: usesLargeControls ? 70 : 48,
-            foregroundColor: LoopLineTheme.readingPrimaryText,
-            backgroundColor: LoopLineTheme.readingControlFill
-        ))
-        .disabled(!viewModel.canDecreaseSelectedMetric(for: project))
-        .opacity(viewModel.canDecreaseSelectedMetric(for: project) ? 1 : 0.38)
-        .accessibilityLabel("Decrease \(viewModel.selectedMetric.title)")
-    }
-
-    private var metricValue: some View {
-        Text(String(viewModel.selectedMetricValue(for: project)))
-            .font(metricValueFont)
-            .foregroundStyle(LoopLineTheme.readingPrimaryText)
-            .lineLimit(1)
-            .minimumScaleFactor(0.65)
-            .accessibilityLabel("\(viewModel.selectedMetric.title) \(viewModel.selectedMetricValue(for: project))")
-    }
-
-    private var increaseButton: some View {
-        Button {
-            viewModel.incrementSelectedMetric(for: project, in: modelContext)
-        } label: {
-            Image(systemName: "plus")
-        }
-        .buttonStyle(LoopLineIconButtonStyle(
-            size: usesLargeControls ? 70 : 48,
-            foregroundColor: LoopLineTheme.primaryActionForeground,
-            backgroundColor: LoopLineTheme.primaryActionBackground
-        ))
-        .accessibilityLabel("Increase \(viewModel.selectedMetric.title)")
-    }
-
-    private var metricValueFont: Font {
-        if usesLargeControls {
-            return Font.title.weight(.bold).monospacedDigit()
-        }
-        return Font.system(size: 34, weight: .bold).monospacedDigit()
     }
 }
 
