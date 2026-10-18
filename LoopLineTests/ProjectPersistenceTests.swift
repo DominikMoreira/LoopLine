@@ -6,6 +6,7 @@
 //
 
 import SwiftData
+import Testing
 import UIKit
 import XCTest
 @testable import LoopLine
@@ -233,5 +234,41 @@ final class ProjectPersistenceTests: XCTestCase {
 
     private enum TestError: Error {
         case saveFailed
+    }
+}
+
+@Suite("PDF Reading State Persistence")
+struct PDFReadingStatePersistenceTests {
+    @Test @MainActor
+    func persistsReadingPositionAndSelectedMetric() throws {
+        let container = try ModelContainer(
+            for: Project.self, ProjectNote.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let project = Project(name: "Cable Chart", sourceType: .pdf)
+        project.lastPDFPageIndex = 4
+        project.lastPDFPageVerticalPosition = 0.375
+        project.selectedTrackingMetricRawValue = ReadingTrackingMetric.stitches.rawValue
+        context.insert(project)
+        try context.save()
+
+        let freshContext = ModelContext(container)
+        let savedProject = try #require(try freshContext.fetch(FetchDescriptor<Project>()).first)
+
+        #expect(savedProject.lastPDFPageIndex == 4)
+        #expect(savedProject.lastPDFPageVerticalPosition == 0.375)
+        #expect(savedProject.selectedTrackingMetricRawValue == ReadingTrackingMetric.stitches.rawValue)
+    }
+
+    @Test @MainActor
+    func fallsBackToRowForAnUnknownSavedMetric() {
+        let project = Project(name: "Cable Chart", sourceType: .pdf)
+        project.selectedTrackingMetricRawValue = "unknown"
+        let viewModel = PDFReadingViewModel()
+
+        viewModel.restoreSelectedMetric(for: project)
+
+        #expect(viewModel.selectedMetric == .row)
     }
 }
