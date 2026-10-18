@@ -97,7 +97,7 @@ struct PDFReadingView: View {
     }
 
     private var trackingControls: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 8) {
             if usesLargeControls {
                 VStack(alignment: .leading, spacing: 12) {
                     metricPicker
@@ -111,6 +111,10 @@ struct PDFReadingView: View {
                         increaseButton
                     }
                     .frame(maxWidth: .infinity)
+
+                    if let change = project.lastCounterChange {
+                        LastCounterChangeLabel(change: change)
+                    }
                 }
             } else {
                 HStack(spacing: 16) {
@@ -124,6 +128,10 @@ struct PDFReadingView: View {
                         .frame(minWidth: 70)
 
                     increaseButton
+                }
+
+                if let change = project.lastCounterChange {
+                    LastCounterChangeLabel(change: change)
                 }
             }
         }

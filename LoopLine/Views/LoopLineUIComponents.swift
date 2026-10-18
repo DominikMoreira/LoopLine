@@ -332,3 +332,25 @@ struct LoopLineFieldLabel: View {
             .foregroundStyle(LoopLineTheme.secondaryText)
     }
 }
+
+struct LastCounterChangeLabel: View {
+    let change: LastCounterChange
+
+    @Environment(\.calendar) private var calendar
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        let statusText = LastCounterChangeFormatter.statusText(
+            for: change,
+            calendar: calendar,
+            locale: locale
+        )
+
+        Text(statusText)
+            .font(.footnote)
+            .foregroundStyle(LoopLineTheme.readingSecondaryText)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(statusText)
+    }
+}

@@ -660,6 +660,159 @@
         }
       }
     },
+    "Last: Repeat decreased to %@ · %@" : {
+      "comment" : "Reading mode status line for the last repeat counter decrease. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Wiederholung auf %1$@ verringert · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Repeat decreased to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Repeat increased to %@ · %@" : {
+      "comment" : "Reading mode status line for the last repeat counter increase. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Wiederholung auf %1$@ erhöht · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Repeat increased to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Repeat set to %@ · %@" : {
+      "comment" : "Reading mode status line for a directly set repeat counter. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Wiederholung auf %1$@ gesetzt · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Repeat set to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Row decreased to %@ · %@" : {
+      "comment" : "Reading mode status line for the last row counter decrease. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Reihe auf %1$@ verringert · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Row decreased to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Row increased to %@ · %@" : {
+      "comment" : "Reading mode status line for the last row counter increase. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Reihe auf %1$@ erhöht · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Row increased to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Row set to %@ · %@" : {
+      "comment" : "Reading mode status line for a directly set row counter. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Reihe auf %1$@ gesetzt · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Row set to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Stitches decreased to %@ · %@" : {
+      "comment" : "Reading mode status line for the last stitch counter decrease. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Maschen auf %1$@ verringert · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Stitches decreased to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Stitches increased to %@ · %@" : {
+      "comment" : "Reading mode status line for the last stitch counter increase. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Maschen auf %1$@ erhöht · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Stitches increased to %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Last: Stitches set to %@ · %@" : {
+      "comment" : "Reading mode status line for a directly set stitch counter. The first placeholder is the new value and the second is the local time or date and time.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt: Maschen auf %1$@ gesetzt · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last: Stitches set to %1$@ · %2$@"
+          }
+        }
+      }
+    },
     "LoopLine" : {
       "comment" : "The name of the app.",
       "isCommentAutoGenerated" : true,

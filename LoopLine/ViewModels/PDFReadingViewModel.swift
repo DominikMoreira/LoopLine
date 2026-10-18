@@ -72,6 +72,11 @@ final class PDFReadingViewModel {
             project.repeatCurrent += 1
         }
 
+        project.recordLastCounterChange(
+            metric: selectedMetric,
+            value: selectedMetricValue(for: project),
+            direction: .increased
+        )
         save(modelContext)
     }
 
@@ -87,6 +92,11 @@ final class PDFReadingViewModel {
             project.repeatCurrent = max(project.repeatCurrent - 1, 0)
         }
 
+        project.recordLastCounterChange(
+            metric: selectedMetric,
+            value: selectedMetricValue(for: project),
+            direction: .decreased
+        )
         save(modelContext)
     }
 

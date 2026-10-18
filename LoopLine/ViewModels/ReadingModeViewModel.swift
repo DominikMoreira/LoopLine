@@ -57,50 +57,61 @@ final class ReadingModeViewModel {
     }
 
     func selectRow(at index: Int, in project: Project, modelContext: ModelContext) {
-        guard project.rows.indices.contains(index) else { return }
+        guard project.rows.indices.contains(index), project.currentRow != index else { return }
         project.currentRow = index
+        project.recordLastCounterChange(metric: .row, value: index, direction: .set)
         save(modelContext)
     }
 
     func incrementRow(for project: Project, in modelContext: ModelContext) {
         guard canIncreaseRow(for: project) else { return }
         project.currentRow += 1
+        project.recordLastCounterChange(metric: .row, value: project.currentRow, direction: .increased)
         save(modelContext)
     }
 
     func decrementRow(for project: Project, in modelContext: ModelContext) {
         guard project.currentRow > 0 else { return }
         project.currentRow -= 1
+        project.recordLastCounterChange(metric: .row, value: project.currentRow, direction: .decreased)
         save(modelContext)
     }
 
     func incrementRepeat(for project: Project, in modelContext: ModelContext) {
         guard canIncreaseRepeat(for: project) else { return }
         project.repeatCurrent += 1
+        project.recordLastCounterChange(metric: .repeatCount, value: project.repeatCurrent, direction: .increased)
         save(modelContext)
     }
 
     func decrementRepeat(for project: Project, in modelContext: ModelContext) {
         guard project.repeatCurrent > 0 else { return }
         project.repeatCurrent -= 1
+        project.recordLastCounterChange(metric: .repeatCount, value: project.repeatCurrent, direction: .decreased)
         save(modelContext)
     }
 
     func incrementStitch(for project: Project, in modelContext: ModelContext) {
         project.currentStitch += 1
+        project.recordLastCounterChange(metric: .stitches, value: project.currentStitch, direction: .increased)
         save(modelContext)
     }
 
     func decrementStitch(for project: Project, in modelContext: ModelContext) {
         guard project.currentStitch > 0 else { return }
         project.currentStitch -= 1
+        project.recordLastCounterChange(metric: .stitches, value: project.currentStitch, direction: .decreased)
         save(modelContext)
     }
 
     func resetCounters(for project: Project, in modelContext: ModelContext) {
+        let didChange = project.currentRow != 0 || project.repeatCurrent != 0 || project.currentStitch != 0
         project.currentRow = 0
         project.repeatCurrent = 0
         project.currentStitch = 0
+        if didChange {
+            project.clearLastCounterChange()
+        }
         save(modelContext)
     }
 

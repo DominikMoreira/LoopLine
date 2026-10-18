@@ -225,6 +225,131 @@ final class ProjectPersistenceTests: XCTestCase {
         XCTAssertTrue(try context.fetch(FetchDescriptor<ProjectNote>()).isEmpty)
     }
 
+    @MainActor
+    func testCounterChangesRecordMetricValueDirectionAndTimestamp() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let project = Project(name: "Scarf", sourceType: .pdf)
+        let viewModel = PDFReadingViewModel()
+
+        viewModel.incrementSelectedMetric(for: project, in: context)
+
+        let change = try XCTUnwrap(project.lastCounterChange)
+        XCTAssertEqual(change.metric, .row)
+        XCTAssertEqual(change.value, 1)
+        XCTAssertEqual(change.direction, .increased)
+        XCTAssertNotNil(project.lastCounterChangedAt)
+    }
+
+    @MainActor
+    func testNewCounterChangeReplacesThePreviousChange() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let project = Project(name: "Scarf", sourceType: .pdf)
+        let viewModel = PDFReadingViewModel()
+
+        viewModel.incrementSelectedMetric(for: project, in: context)
+        viewModel.selectMetric(.stitches, for: project, in: context)
+        viewModel.incrementSelectedMetric(for: project, in: context)
+
+        let change = try XCTUnwrap(project.lastCounterChange)
+        XCTAssertEqual(change.metric, .stitches)
+        XCTAssertEqual(change.value, 1)
+        XCTAssertEqual(change.direction, .increased)
+    }
+
+    @MainActor
+    func testIneffectiveDecrementDoesNotReplaceTheLastCounterChange() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let project = Project(name: "Scarf", sourceType: .pdf)
+        let timestamp = Date(timeIntervalSinceReferenceDate: 12_345)
+        project.recordLastCounterChange(metric: .repeatCount, value: 2, direction: .decreased, timestamp: timestamp)
+        let viewModel = PDFReadingViewModel()
+
+        viewModel.decrementSelectedMetric(for: project, in: context)
+
+        let change = try XCTUnwrap(project.lastCounterChange)
+        XCTAssertEqual(change.metric, .repeatCount)
+        XCTAssertEqual(change.value, 2)
+        XCTAssertEqual(change.direction, .decreased)
+        XCTAssertEqual(change.timestamp, timestamp)
+    }
+
+    @MainActor
+    func testSelectingAnotherMetricDoesNotChangeTheLastCounterChange() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let project = Project(name: "Scarf", sourceType: .pdf)
+        let timestamp = Date(timeIntervalSinceReferenceDate: 12_345)
+        project.recordLastCounterChange(metric: .row, value: 4, direction: .increased, timestamp: timestamp)
+        let viewModel = PDFReadingViewModel()
+
+        viewModel.selectMetric(.repeatCount, for: project, in: context)
+
+        XCTAssertEqual(viewModel.selectedMetric, .repeatCount)
+        XCTAssertEqual(project.lastCounterChange?.metric, .row)
+        XCTAssertEqual(project.lastCounterChange?.value, 4)
+        XCTAssertEqual(project.lastCounterChange?.timestamp, timestamp)
+    }
+
+    @MainActor
+    func testDirectRowSelectionRecordsANeutralCounterChange() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let project = Project(
+            name: "Scarf",
+            sourceType: .text,
+            rows: ["Row 1", "Row 2", "Row 3"]
+        )
+        let viewModel = ReadingModeViewModel()
+
+        viewModel.selectRow(at: 2, in: project, modelContext: context)
+
+        let change = try XCTUnwrap(project.lastCounterChange)
+        XCTAssertEqual(change.metric, .row)
+        XCTAssertEqual(change.value, 2)
+        XCTAssertEqual(change.direction, .set)
+    }
+
+    @MainActor
+    func testLastCounterChangePersistsAndProjectsRemainIndependent() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let firstProject = Project(name: "Scarf", sourceType: .text)
+        let secondProject = Project(name: "Socks", sourceType: .text)
+        firstProject.recordLastCounterChange(metric: .stitches, value: 24, direction: .increased)
+        context.insert(firstProject)
+        context.insert(secondProject)
+        try context.save()
+
+        let freshContext = ModelContext(container)
+        let savedProjects = try freshContext.fetch(FetchDescriptor<Project>())
+        let savedFirstProject = try XCTUnwrap(savedProjects.first { $0.id == firstProject.id })
+        let savedSecondProject = try XCTUnwrap(savedProjects.first { $0.id == secondProject.id })
+
+        XCTAssertEqual(savedFirstProject.lastCounterChange?.metric, .stitches)
+        XCTAssertEqual(savedFirstProject.lastCounterChange?.value, 24)
+        XCTAssertEqual(savedFirstProject.lastCounterChange?.direction, .increased)
+        XCTAssertNotNil(savedFirstProject.lastCounterChange?.timestamp)
+        XCTAssertNil(savedSecondProject.lastCounterChange)
+    }
+
+    func testLastCounterChangeTimestampUsesTimeTodayAndDateForOlderChanges() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        let locale = Locale(identifier: "en_US")
+        let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 18, hour: 17, minute: 48)) ?? .now
+        let today = calendar.date(byAdding: .minute, value: -1, to: now) ?? now
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+
+        let todayText = LastCounterChangeFormatter.timestampText(for: today, now: now, calendar: calendar, locale: locale)
+        let olderText = LastCounterChangeFormatter.timestampText(for: yesterday, now: now, calendar: calendar, locale: locale)
+
+        XCTAssertFalse(todayText.contains("2026"))
+        XCTAssertTrue(olderText.contains("2026"))
+    }
+
     private func makeContainer() throws -> ModelContainer {
         try ModelContainer(
             for: Project.self, ProjectNote.self,

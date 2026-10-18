@@ -198,6 +198,10 @@ struct ReadingModeView: View {
                 increaseAction: { viewModel.incrementStitch(for: project, in: modelContext) }
             )
 
+            if let change = project.lastCounterChange {
+                LastCounterChangeLabel(change: change)
+            }
+
             reminderStrip
         }
         .padding(.horizontal, 18)
