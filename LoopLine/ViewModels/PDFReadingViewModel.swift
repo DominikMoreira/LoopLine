@@ -13,6 +13,40 @@ final class PDFReadingViewModel {
         ImportedPDFStorage.fileURL(for: project)
     }
 
+    func restoreSelectedMetric(for project: Project) {
+        selectedMetric = ReadingTrackingMetric(rawValue: project.selectedTrackingMetricRawValue) ?? .row
+    }
+
+    func selectMetric(_ metric: ReadingTrackingMetric, for project: Project, in modelContext: ModelContext) {
+        selectedMetric = metric
+        guard project.selectedTrackingMetricRawValue != metric.rawValue else { return }
+
+        project.selectedTrackingMetricRawValue = metric.rawValue
+        save(modelContext)
+    }
+
+    func restoreReadingPosition(for project: Project) -> PDFReadingPosition {
+        PDFReadingPosition(
+            pageIndex: max(project.lastPDFPageIndex, 0),
+            verticalPosition: min(max(project.lastPDFPageVerticalPosition, 0), 1)
+        )
+    }
+
+    func saveReadingPosition(
+        _ position: PDFReadingPosition,
+        for project: Project,
+        in modelContext: ModelContext
+    ) {
+        guard project.lastPDFPageIndex != position.pageIndex ||
+                project.lastPDFPageVerticalPosition != position.verticalPosition else {
+            return
+        }
+
+        project.lastPDFPageIndex = position.pageIndex
+        project.lastPDFPageVerticalPosition = position.verticalPosition
+        save(modelContext)
+    }
+
     func selectedMetricValue(for project: Project) -> Int {
         switch selectedMetric {
         case .row:
@@ -38,6 +72,11 @@ final class PDFReadingViewModel {
             project.repeatCurrent += 1
         }
 
+        project.recordLastCounterChange(
+            metric: selectedMetric,
+            value: selectedMetricValue(for: project),
+            direction: .increased
+        )
         save(modelContext)
     }
 
@@ -53,6 +92,11 @@ final class PDFReadingViewModel {
             project.repeatCurrent = max(project.repeatCurrent - 1, 0)
         }
 
+        project.recordLastCounterChange(
+            metric: selectedMetric,
+            value: selectedMetricValue(for: project),
+            direction: .decreased
+        )
         save(modelContext)
     }
 
@@ -79,6 +123,11 @@ final class PDFReadingViewModel {
     private func save(_ modelContext: ModelContext) {
         try? modelContext.save()
     }
+}
+
+struct PDFReadingPosition: Equatable {
+    let pageIndex: Int
+    let verticalPosition: Double
 }
 
 struct PDFMarkupError: Identifiable {

@@ -1,11 +1,22 @@
+import SwiftData
 import SwiftUI
 
 struct ImageReadingView: View {
-    let project: Project
+    @Query private var settings: [AppSettings]
+    @Bindable var project: Project
     private let viewModel = ImageReadingViewModel()
 
+    private var usesLargeControls: Bool {
+        settings.first?.largeControls ?? true
+    }
+
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            ReadingTrackingControls(project: project, usesLargeControls: usesLargeControls)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
+
             if let imageReference = viewModel.imageReference(for: project) {
                 ScrollView([.vertical, .horizontal]) {
                     StoredImagePreview(
@@ -16,7 +27,6 @@ struct ImageReadingView: View {
                     .padding(18)
                     .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
                 }
-                .background(LoopLineTheme.readingBackground.ignoresSafeArea())
                 .overlay(alignment: .bottomLeading) {
                     Label("Pinch to zoom - drag to pan", systemImage: "arrow.up.left.and.arrow.down.right")
                         .font(.caption.monospaced())
@@ -33,9 +43,9 @@ struct ImageReadingView: View {
                     description: Text("The imported image could not be found.")
                 )
                 .foregroundStyle(LoopLineTheme.primaryText, LoopLineTheme.accent, LoopLineTheme.secondaryText)
-                .background(LoopLineTheme.readingBackground.ignoresSafeArea())
             }
         }
+        .background(LoopLineTheme.readingBackground.ignoresSafeArea())
         .navigationTitle("Reading Mode")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(LoopLineTheme.readingBackground, for: .navigationBar)

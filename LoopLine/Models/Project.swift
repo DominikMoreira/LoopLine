@@ -12,6 +12,13 @@ final class Project {
     var repeatCurrent: Int
     var currentStitch: Int = 0
     var repeatTotal: Int?
+    var selectedTrackingMetricRawValue: String = ReadingTrackingMetric.row.rawValue
+    var lastCounterMetricRawValue: String?
+    var lastCounterValue: Int?
+    var lastCounterChangeDirectionRawValue: String?
+    var lastCounterChangedAt: Date?
+    var lastPDFPageIndex: Int = 0
+    var lastPDFPageVerticalPosition: Double = 0
     var rows: [String]
     var sourceText: String?
     var sourceFilePath: String?

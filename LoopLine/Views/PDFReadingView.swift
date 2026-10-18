@@ -20,7 +20,7 @@ struct PDFReadingView: View {
         Group {
             if let pdfURL = viewModel.pdfURL(for: project) {
                 VStack(spacing: 0) {
-                    trackingControls
+                    ReadingTrackingControls(project: project, usesLargeControls: usesLargeControls)
                         .padding(.horizontal, 16)
                         .padding(.top, 12)
                         .padding(.bottom, 10)
@@ -28,7 +28,11 @@ struct PDFReadingView: View {
                     PDFKitView(
                         url: pdfURL,
                         isMarkupActive: viewModel.isMarkupActive,
-                        markupError: $viewModel.markupError
+                        readingPosition: viewModel.restoreReadingPosition(for: project),
+                        markupError: $viewModel.markupError,
+                        onReadingPositionChanged: { position in
+                            viewModel.saveReadingPosition(position, for: project, in: modelContext)
+                        }
                     )
                     .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
                     .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
@@ -50,7 +54,7 @@ struct PDFReadingView: View {
                 .background(LoopLineTheme.readingBackground.ignoresSafeArea())
             } else {
                 VStack(spacing: 0) {
-                    trackingControls
+                    ReadingTrackingControls(project: project, usesLargeControls: usesLargeControls)
                         .padding(.horizontal, 16)
                         .padding(.top, 12)
                         .padding(.bottom, 10)
@@ -86,121 +90,6 @@ struct PDFReadingView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
-        .onAppear {
-            viewModel.normalizeTrackingValues(for: project, in: modelContext)
-        }
-    }
-
-    private var trackingControls: some View {
-        Group {
-            if usesLargeControls {
-                VStack(alignment: .leading, spacing: 12) {
-                    metricPicker
-
-                    HStack(spacing: 20) {
-                        decreaseButton
-
-                        metricValue
-                            .frame(minWidth: 90)
-
-                        increaseButton
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            } else {
-                HStack(spacing: 16) {
-                    metricPicker
-
-                    Spacer(minLength: 0)
-
-                    decreaseButton
-
-                    metricValue
-                        .frame(minWidth: 70)
-
-                    increaseButton
-                }
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(LoopLineTheme.readingPanel, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                .stroke(LoopLineTheme.readingStroke, lineWidth: 1)
-        }
-    }
-
-    private var metricPicker: some View {
-        Menu {
-            ForEach(ReadingTrackingMetric.allCases) { metric in
-                Button(metric.title) {
-                    viewModel.selectedMetric = metric
-                }
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Text(viewModel.selectedMetric.title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.bold))
-            }
-            .foregroundStyle(LoopLineTheme.readingPrimaryText)
-            .frame(minWidth: 92, alignment: .leading)
-            .padding(.horizontal, 12)
-            .frame(height: usesLargeControls ? 56 : 48)
-            .background(LoopLineTheme.readingControlFill, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
-        }
-        .accessibilityLabel("Tracking metric")
-        .accessibilityValue(viewModel.selectedMetric.title)
-    }
-
-    private var decreaseButton: some View {
-        Button {
-            viewModel.decrementSelectedMetric(for: project, in: modelContext)
-        } label: {
-            Image(systemName: "minus")
-        }
-        .buttonStyle(LoopLineIconButtonStyle(
-            size: usesLargeControls ? 70 : 48,
-            foregroundColor: LoopLineTheme.readingPrimaryText,
-            backgroundColor: LoopLineTheme.readingControlFill
-        ))
-        .disabled(!viewModel.canDecreaseSelectedMetric(for: project))
-        .opacity(viewModel.canDecreaseSelectedMetric(for: project) ? 1 : 0.38)
-        .accessibilityLabel("Decrease \(viewModel.selectedMetric.title)")
-    }
-
-    private var metricValue: some View {
-        Text(String(viewModel.selectedMetricValue(for: project)))
-            .font(metricValueFont)
-            .foregroundStyle(LoopLineTheme.readingPrimaryText)
-            .lineLimit(1)
-            .minimumScaleFactor(0.65)
-            .accessibilityLabel("\(viewModel.selectedMetric.title) \(viewModel.selectedMetricValue(for: project))")
-    }
-
-    private var increaseButton: some View {
-        Button {
-            viewModel.incrementSelectedMetric(for: project, in: modelContext)
-        } label: {
-            Image(systemName: "plus")
-        }
-        .buttonStyle(LoopLineIconButtonStyle(
-            size: usesLargeControls ? 70 : 48,
-            foregroundColor: LoopLineTheme.primaryActionForeground,
-            backgroundColor: LoopLineTheme.primaryActionBackground
-        ))
-        .accessibilityLabel("Increase \(viewModel.selectedMetric.title)")
-    }
-
-    private var metricValueFont: Font {
-        if usesLargeControls {
-            return Font.title.weight(.bold).monospacedDigit()
-        }
-        return Font.system(size: 34, weight: .bold).monospacedDigit()
     }
 }
 
@@ -249,10 +138,17 @@ private final class PDFMarkupPDFView: PDFView {
 private struct PDFKitView: UIViewRepresentable {
     let url: URL
     let isMarkupActive: Bool
+    let readingPosition: PDFReadingPosition
     @Binding var markupError: PDFMarkupError?
+    let onReadingPositionChanged: (PDFReadingPosition) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(url: url, markupError: $markupError)
+        Coordinator(
+            url: url,
+            markupError: $markupError,
+            readingPosition: readingPosition,
+            onReadingPositionChanged: onReadingPositionChanged
+        )
     }
 
     func makeUIView(context: Context) -> PDFView {
@@ -263,7 +159,12 @@ private struct PDFKitView: UIViewRepresentable {
         pdfView.backgroundColor = .clear
         pdfView.document = PDFDocument(url: url)
 
-        context.coordinator.configure(pdfView: pdfView, isMarkupActive: isMarkupActive)
+        context.coordinator.configure(
+            pdfView: pdfView,
+            isMarkupActive: isMarkupActive,
+            readingPosition: readingPosition,
+            onReadingPositionChanged: onReadingPositionChanged
+        )
         return pdfView
     }
 
@@ -273,7 +174,12 @@ private struct PDFKitView: UIViewRepresentable {
             pdfView.document = PDFDocument(url: url)
         }
 
-        context.coordinator.configure(pdfView: pdfView, isMarkupActive: isMarkupActive)
+        context.coordinator.configure(
+            pdfView: pdfView,
+            isMarkupActive: isMarkupActive,
+            readingPosition: readingPosition,
+            onReadingPositionChanged: onReadingPositionChanged
+        )
     }
 
     static func dismantleUIView(_ pdfView: PDFView, coordinator: Coordinator) {
@@ -285,6 +191,9 @@ private struct PDFKitView: UIViewRepresentable {
 
         private var isMarkupActive = false
         private var markupError: Binding<PDFMarkupError?>
+        private var readingPosition: PDFReadingPosition
+        private var onReadingPositionChanged: (PDFReadingPosition) -> Void
+        private var hasRestoredReadingPosition = false
         private let toolPicker = PKToolPicker()
         private let defaultMarkupTool = PKInkingTool(.marker, color: UIColor.systemYellow.withAlphaComponent(0.38), width: 14)
         private var currentTool: any PKTool
@@ -299,9 +208,16 @@ private struct PDFKitView: UIViewRepresentable {
         private var annotationsByStrokeID = [UUID: PDFMarkupAnnotation]()
         private var hasLoadedStoredMarkups = false
 
-        init(url: URL, markupError: Binding<PDFMarkupError?>) {
+        init(
+            url: URL,
+            markupError: Binding<PDFMarkupError?>,
+            readingPosition: PDFReadingPosition,
+            onReadingPositionChanged: @escaping (PDFReadingPosition) -> Void
+        ) {
             self.url = url
             self.markupError = markupError
+            self.readingPosition = readingPosition
+            self.onReadingPositionChanged = onReadingPositionChanged
             self.currentTool = defaultMarkupTool
             self.markupStorage = PDFMarkupStorage(pdfURL: url)
             super.init()
@@ -330,6 +246,7 @@ private struct PDFKitView: UIViewRepresentable {
         }
 
         func teardown() {
+            saveCurrentReadingPosition()
             finishActiveMarkup()
             saveStoredMarkups()
             saveWorkItem?.cancel()
@@ -343,11 +260,13 @@ private struct PDFKitView: UIViewRepresentable {
         }
 
         @objc private func saveBeforeAppResignsActive() {
+            saveCurrentReadingPosition()
             finishActiveMarkup()
             saveStoredMarkups()
         }
 
         func reset(for url: URL) {
+            saveCurrentReadingPosition()
             finishActiveMarkup()
             saveStoredMarkups()
             saveWorkItem?.cancel()
@@ -357,12 +276,71 @@ private struct PDFKitView: UIViewRepresentable {
             markupStorage = PDFMarkupStorage(pdfURL: url)
             storedStrokesByPage.removeAll()
             hasLoadedStoredMarkups = false
+            hasRestoredReadingPosition = false
         }
 
-        func configure(pdfView: PDFView, isMarkupActive: Bool) {
+        private func restoreReadingPositionIfNeeded(in pdfView: PDFView) {
+            guard !hasRestoredReadingPosition else { return }
+            hasRestoredReadingPosition = true
+
+            DispatchQueue.main.async { [weak self, weak pdfView] in
+                guard let self,
+                      let pdfView,
+                      let currentPDFView = self.pdfView,
+                      currentPDFView === pdfView,
+                      let document = pdfView.document,
+                      readingPosition.pageIndex < document.pageCount,
+                      let page = document.page(at: readingPosition.pageIndex) else {
+                    return
+                }
+
+                let bounds = page.bounds(for: .cropBox)
+                let destination = PDFDestination(
+                    page: page,
+                    at: CGPoint(
+                        x: bounds.midX,
+                        y: bounds.minY + (bounds.height * readingPosition.verticalPosition)
+                    )
+                )
+                pdfView.go(to: destination)
+            }
+        }
+
+        private func saveCurrentReadingPosition() {
+            guard let pdfView,
+                  let document = pdfView.document else {
+                return
+            }
+
+            let midpoint = CGPoint(x: pdfView.bounds.midX, y: pdfView.bounds.midY)
+            guard let page = pdfView.page(for: midpoint, nearest: true) else {
+                return
+            }
+
+            let pageIndex = document.index(for: page)
+            let bounds = page.bounds(for: .cropBox)
+            guard pageIndex >= 0, bounds.height > 0 else { return }
+
+            let pagePoint = pdfView.convert(midpoint, to: page)
+            let verticalPosition = min(max((pagePoint.y - bounds.minY) / bounds.height, 0), 1)
+            onReadingPositionChanged(PDFReadingPosition(
+                pageIndex: pageIndex,
+                verticalPosition: verticalPosition
+            ))
+        }
+
+        func configure(
+            pdfView: PDFView,
+            isMarkupActive: Bool,
+            readingPosition: PDFReadingPosition,
+            onReadingPositionChanged: @escaping (PDFReadingPosition) -> Void
+        ) {
             self.pdfView = pdfView
+            self.readingPosition = readingPosition
+            self.onReadingPositionChanged = onReadingPositionChanged
             installMarkupGestureIfNeeded(on: pdfView)
             loadStoredMarkupsIfNeeded(in: pdfView)
+            restoreReadingPositionIfNeeded(in: pdfView)
             pdfView.isInMarkupMode = isMarkupActive
             (pdfView as? PDFMarkupPDFView)?.isMarkupModeActive = isMarkupActive
             markupGesture?.isEnabled = isMarkupActive

@@ -18,13 +18,22 @@ struct ReadingModeView: View {
         @Bindable var viewModel = viewModel
 
         ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    readingPanel
-                }
+            VStack(spacing: 0) {
+                ReadingTrackingControls(
+                    project: project,
+                    usesLargeControls: appSettings.largeControls
+                )
                 .padding(.horizontal, 18)
-                .padding(.top, 18)
-                .padding(.bottom, appSettings.largeControls ? 340 : 290)
+                .padding(.top, 12)
+                .padding(.bottom, 10)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        readingPanel
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+                }
             }
             .background(readingBackground.ignoresSafeArea())
             .navigationTitle("Reading Mode")
@@ -40,10 +49,12 @@ struct ReadingModeView: View {
                 .accessibilityLabel("Reset counters")
             }
             .safeAreaInset(edge: .bottom) {
-                readingControls
+                reminderControls
             }
             .onAppear {
-                viewModel.scrollToActiveRow(for: project, with: proxy)
+                DispatchQueue.main.async {
+                    viewModel.scrollToActiveRow(for: project, with: proxy)
+                }
             }
             .onChange(of: project.currentRow) { _, _ in
                 viewModel.scrollToActiveRow(for: project, with: proxy)
@@ -149,54 +160,10 @@ struct ReadingModeView: View {
         .frame(maxWidth: .infinity, minHeight: 360)
     }
 
-    private var readingControls: some View {
+    private var reminderControls: some View {
         VStack(spacing: 12) {
             Divider()
                 .overlay(dividerColor)
-
-            CounterControlPanel(
-                label: "ROW",
-                value: String(project.currentRow),
-                detail: viewModel.totalRows(for: project) > 0
-                    ? String(localized: "of \(viewModel.totalRows(for: project))")
-                    : nil,
-                isPrimary: true,
-                usesLargeControls: appSettings.largeControls,
-                canDecrease: project.currentRow > 0,
-                canIncrease: viewModel.canIncreaseRow(for: project),
-                decreaseAction: { viewModel.decrementRow(for: project, in: modelContext) },
-                increaseAction: { viewModel.incrementRow(for: project, in: modelContext) }
-            )
-
-            Divider()
-                .overlay(dividerColor)
-
-            CounterControlPanel(
-                label: "REPEAT",
-                value: String(project.repeatCurrent),
-                detail: project.repeatTotal.map { String(localized: "of \($0)") },
-                isPrimary: false,
-                usesLargeControls: appSettings.largeControls,
-                canDecrease: project.repeatCurrent > 0,
-                canIncrease: viewModel.canIncreaseRepeat(for: project),
-                decreaseAction: { viewModel.decrementRepeat(for: project, in: modelContext) },
-                increaseAction: { viewModel.incrementRepeat(for: project, in: modelContext) }
-            )
-
-            Divider()
-                .overlay(dividerColor)
-
-            CounterControlPanel(
-                label: "STITCHES",
-                value: String(project.currentStitch),
-                detail: nil,
-                isPrimary: false,
-                usesLargeControls: appSettings.largeControls,
-                canDecrease: project.currentStitch > 0,
-                canIncrease: true,
-                decreaseAction: { viewModel.decrementStitch(for: project, in: modelContext) },
-                increaseAction: { viewModel.incrementStitch(for: project, in: modelContext) }
-            )
 
             reminderStrip
         }
@@ -283,10 +250,6 @@ struct ReadingModeView: View {
         LoopLineTheme.readingPrimaryText
     }
 
-    private var secondaryText: Color {
-        LoopLineTheme.readingSecondaryText
-    }
-
     private var dividerColor: Color {
         LoopLineTheme.readingStroke
     }
@@ -345,136 +308,6 @@ private struct ReadingRow: View {
 
     private var rowTextColor: Color {
         isActive ? LoopLineTheme.primaryText : LoopLineTheme.readingPrimaryText
-    }
-}
-
-private struct CounterControlPanel: View {
-    let label: LocalizedStringResource
-    let value: String
-    let detail: String?
-    let isPrimary: Bool
-    let usesLargeControls: Bool
-    let canDecrease: Bool
-    let canIncrease: Bool
-    let decreaseAction: () -> Void
-    let increaseAction: () -> Void
-
-    private var buttonSize: CGFloat {
-        if isPrimary {
-            return usesLargeControls ? 88 : 62
-        }
-        return usesLargeControls ? 70 : 48
-    }
-
-    var body: some View {
-        if usesLargeControls {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(label)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(secondaryText)
-
-                HStack(spacing: 20) {
-                    decreaseButton
-
-                    counterValue
-                        .frame(minWidth: isPrimary ? 96 : 76)
-
-                    increaseButton
-                }
-                .frame(maxWidth: .infinity)
-            }
-        } else {
-            HStack(spacing: 16) {
-                Text(label)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(secondaryText)
-                    .frame(width: 72, alignment: .leading)
-
-                decreaseButton
-
-                counterValue
-                    .frame(minWidth: isPrimary ? 74 : 58)
-
-                increaseButton
-
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
-    private var decreaseButton: some View {
-        Button(action: decreaseAction) {
-            Image(systemName: "minus")
-        }
-        .buttonStyle(LoopLineIconButtonStyle(
-            size: buttonSize,
-            foregroundColor: primaryText,
-            backgroundColor: secondaryButtonBackground
-        ))
-        .disabled(!canDecrease)
-        .opacity(canDecrease ? 1 : 0.38)
-    }
-
-    private var increaseButton: some View {
-        Button(action: increaseAction) {
-            Image(systemName: "plus")
-        }
-        .buttonStyle(LoopLineIconButtonStyle(
-            size: buttonSize,
-            foregroundColor: primaryIncreaseForeground,
-            backgroundColor: primaryIncreaseBackground
-        ))
-        .disabled(!canIncrease)
-        .opacity(canIncrease ? 1 : 0.38)
-    }
-
-    private var counterValue: some View {
-        VStack(spacing: 1) {
-            Text(value)
-                .font(valueFont)
-                .foregroundStyle(primaryText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-
-            if let detail {
-                Text(detail)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(secondaryText)
-            }
-        }
-    }
-
-    private var valueFont: Font {
-        if usesLargeControls {
-            return (isPrimary ? Font.largeTitle : Font.title).weight(.bold).monospacedDigit()
-        }
-        return (isPrimary ? Font.system(size: 48, weight: .bold) : Font.system(size: 34, weight: .bold)).monospacedDigit()
-    }
-
-    private var primaryText: Color {
-        LoopLineTheme.readingPrimaryText
-    }
-
-    private var secondaryText: Color {
-        LoopLineTheme.readingSecondaryText
-    }
-
-    private var secondaryButtonBackground: Color {
-        LoopLineTheme.readingControlFill
-    }
-
-    private var primaryIncreaseForeground: Color {
-        if isPrimary {
-            return LoopLineTheme.primaryActionForeground
-        }
-        return primaryText
-    }
-
-    private var primaryIncreaseBackground: Color {
-        if isPrimary {
-            return LoopLineTheme.primaryActionBackground
-        }
-        return secondaryButtonBackground
     }
 }
 
