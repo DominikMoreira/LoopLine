@@ -42,6 +42,7 @@ struct ContentView: View {
             guard existingProjects.isEmpty else { return }
 
             let pdfURL = try makeUITestPDFURL()
+            let imageURLs = try makeUITestImageURLs()
             modelContext.insert(Project(
                 name: "UI Test PDF Project",
                 subtitle: "Prepared UI test project",
@@ -52,6 +53,17 @@ struct ContentView: View {
                 repeatTotal: 1,
                 rows: ["Row 1: Knit all stitches."],
                 sourceFilePath: pdfURL.path
+            ))
+            modelContext.insert(Project(
+                name: "UI Test Image Project",
+                subtitle: "Prepared UI test image project",
+                detailMeta: "Images",
+                sourceType: .image,
+                currentRow: 1,
+                repeatCurrent: 0,
+                repeatTotal: 1,
+                sourceFilePath: imageURLs[0].path,
+                imageFilePaths: imageURLs.map(\.path)
             ))
             try modelContext.save()
         } catch {
@@ -76,6 +88,36 @@ struct ContentView: View {
         }
 
         return pdfURL
+    }
+
+    private func makeUITestImageURLs() throws -> [URL] {
+        let imageURLs = [
+            FileManager.default.temporaryDirectory.appendingPathComponent("LoopLine-UITest-Pattern-1.png"),
+            FileManager.default.temporaryDirectory.appendingPathComponent("LoopLine-UITest-Pattern-2.png")
+        ]
+
+        for (index, imageURL) in imageURLs.enumerated() where !FileManager.default.fileExists(atPath: imageURL.path) {
+            let renderer = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 900))
+            let image = renderer.image { context in
+                UIColor.systemBackground.setFill()
+                context.fill(CGRect(x: 0, y: 0, width: 600, height: 900))
+
+                let text = "LoopLine UI Test Image \(index + 1)"
+                text.draw(
+                    at: CGPoint(x: 48, y: 72),
+                    withAttributes: [
+                        .font: UIFont.systemFont(ofSize: 32, weight: .semibold),
+                        .foregroundColor: UIColor.label
+                    ]
+                )
+            }
+            guard let data = image.pngData() else {
+                throw CocoaError(.fileWriteUnknown)
+            }
+            try data.write(to: imageURL)
+        }
+
+        return imageURLs
     }
 }
 

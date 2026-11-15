@@ -10,8 +10,7 @@ struct NewProjectDraft {
     var sourceText = ""
     var sourceFilePath: String?
     var sourceFileName: String?
-    var imageFilePath: String?
-    var imageFileName: String?
+    var imageFilePaths: [String] = []
     var rows: [String] = []
 
     var trimmedName: String {
@@ -37,7 +36,7 @@ struct NewProjectDraft {
         case .pdf:
             sourceFilePath != nil
         case .image:
-            imageFilePath != nil
+            !imageFilePaths.isEmpty
         case nil:
             false
         }
@@ -59,10 +58,9 @@ struct NewProjectDraft {
         clearImage()
     }
 
-    mutating func setImage(path: String, fileName: String) {
+    mutating func setImages(paths: [String]) {
         sourceType = .image
-        imageFilePath = path
-        imageFileName = fileName
+        imageFilePaths = paths
         clearPastedText()
         clearPDF()
     }
@@ -85,8 +83,7 @@ struct NewProjectDraft {
     }
 
     private mutating func clearImage() {
-        imageFilePath = nil
-        imageFileName = nil
+        imageFilePaths = []
     }
 }
 
@@ -98,7 +95,7 @@ final class CreateProjectViewModel {
     var isShowingPDFImporter = false
     var isShowingPhotoPicker = false
     var isShowingReplacementOptions = false
-    var selectedImageItem: PhotosPickerItem?
+    var selectedImageItems: [PhotosPickerItem] = []
     var errorMessage: String?
     var isImportingPDF = false
     var isImportingImage = false
@@ -157,8 +154,8 @@ final class CreateProjectViewModel {
         }
     }
 
-    func importImage(from item: PhotosPickerItem?) {
-        guard let item else { return }
+    func importImages(from items: [PhotosPickerItem]) {
+        guard !items.isEmpty else { return }
 
         imageImportTask?.cancel()
         let importID = UUID()
@@ -167,15 +164,19 @@ final class CreateProjectViewModel {
         errorMessage = nil
 
         imageImportTask = Task { [weak self] in
+            var localReferences: [String] = []
             do {
-                guard let data = try await item.loadTransferable(type: Data.self) else {
-                    throw CocoaError(.fileReadCorruptFile)
-                }
-                try Task.checkCancellation()
+                for item in items {
+                    guard let data = try await item.loadTransferable(type: Data.self) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                    try Task.checkCancellation()
 
-                let localURL = try ImportedImageStorage.saveImageData(data)
-                let localReference = localURL.lastPathComponent
-                var didAdoptImage = false
+                    let localURL = try ImportedImageStorage.saveImageData(data)
+                    localReferences.append(localURL.lastPathComponent)
+                }
+
+                var didAdoptImages = false
 
                 await MainActor.run {
                     guard let self,
@@ -184,32 +185,34 @@ final class CreateProjectViewModel {
                         return
                     }
 
-                    self.adoptImage(path: localReference, fileName: localReference)
+                    self.adoptImages(paths: localReferences)
                     self.finishImageImport()
-                    didAdoptImage = true
+                    didAdoptImages = true
                 }
 
-                if !didAdoptImage {
-                    ImportedImageStorage.delete(storedReference: localReference)
+                if !didAdoptImages {
+                    ImportedImageStorage.delete(storedReferences: localReferences)
                 }
             } catch is CancellationError {
+                ImportedImageStorage.delete(storedReferences: localReferences)
                 await MainActor.run {
                     guard let self, self.currentImageImportID == importID else { return }
                     self.finishImageImport()
                 }
             } catch {
+                ImportedImageStorage.delete(storedReferences: localReferences)
                 await MainActor.run {
                     guard let self, self.isDraftActive, self.currentImageImportID == importID else { return }
-                    self.errorMessage = String(localized: "Could not import the selected photo.")
+                    self.errorMessage = String(localized: "Could not import the selected photos.")
                     self.finishImageImport()
                 }
             }
         }
     }
 
-    func adoptImage(path: String, fileName: String) {
+    func adoptImages(paths: [String]) {
         replaceCurrentSource {
-            draft.setImage(path: path, fileName: fileName)
+            draft.setImages(paths: paths)
         }
     }
 
@@ -243,7 +246,7 @@ final class CreateProjectViewModel {
         finishImageImport()
         ProjectCleanupService.deleteDraftFiles(
             pdfReference: draft.sourceFilePath,
-            imageReference: draft.imageFilePath
+            imageReferences: draft.imageFilePaths
         )
     }
 
@@ -258,14 +261,14 @@ final class CreateProjectViewModel {
         case .pdf:
             ImportedPDFStorage.delete(storedReference: draft.sourceFilePath)
         case .image:
-            ImportedImageStorage.delete(storedReference: draft.imageFilePath)
+            ImportedImageStorage.delete(storedReferences: draft.imageFilePaths)
         case .text, nil:
             break
         }
     }
 
     private func finishImageImport() {
-        selectedImageItem = nil
+        selectedImageItems = []
         isImportingImage = false
         imageImportTask = nil
         currentImageImportID = nil

@@ -49,6 +49,7 @@ final class ProjectListViewModel {
             rows: sourceType == .text ? draft.rows : [],
             sourceText: sourceType == .text && !draft.trimmedSourceText.isEmpty ? draft.trimmedSourceText : nil,
             sourceFilePath: sourceFilePath(from: draft, sourceType: sourceType),
+            imageFilePaths: sourceType == .image ? draft.imageFilePaths : [],
             notes: []
         )
 
@@ -79,7 +80,7 @@ final class ProjectListViewModel {
         case .pdf:
             draft.sourceFilePath
         case .image:
-            draft.imageFilePath
+            draft.imageFilePaths.first
         case .text:
             nil
         }

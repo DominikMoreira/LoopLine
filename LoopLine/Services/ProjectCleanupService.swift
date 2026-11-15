@@ -6,14 +6,14 @@ enum ProjectCleanupService {
         case .pdf:
             ImportedPDFStorage.delete(storedReference: project.sourceFilePath)
         case .image:
-            ImportedImageStorage.delete(storedReference: project.sourceFilePath)
+            ImportedImageStorage.delete(storedReferences: project.imageReferences)
         case .text:
             break
         }
     }
 
-    static func deleteDraftFiles(pdfReference: String?, imageReference: String?) {
+    static func deleteDraftFiles(pdfReference: String?, imageReferences: [String]) {
         ImportedPDFStorage.delete(storedReference: pdfReference)
-        ImportedImageStorage.delete(storedReference: imageReference)
+        ImportedImageStorage.delete(storedReferences: imageReferences)
     }
 }

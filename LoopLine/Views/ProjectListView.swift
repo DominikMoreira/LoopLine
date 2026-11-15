@@ -118,7 +118,7 @@ struct ProjectListView: View {
             } label: {
                 ProjectCard(project: project)
             }
-            .modifier(UITestPDFProjectIdentifier(projectName: project.name))
+            .modifier(UITestProjectIdentifier(projectName: project.name))
             .listRowInsets(EdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 18))
             .listRowSeparator(.visible)
             .listRowBackground(LoopLineTheme.appBackground)
@@ -134,13 +134,15 @@ struct ProjectListView: View {
     }
 }
 
-private struct UITestPDFProjectIdentifier: ViewModifier {
+private struct UITestProjectIdentifier: ViewModifier {
     let projectName: String
 
     @ViewBuilder
     func body(content: Content) -> some View {
         if projectName == "UI Test PDF Project" {
             content.accessibilityIdentifier("uiTestPDFProject")
+        } else if projectName == "UI Test Image Project" {
+            content.accessibilityIdentifier("uiTestImageProject")
         } else {
             content
         }
@@ -287,17 +289,19 @@ private struct CreateProjectView: View {
             }
             .photosPicker(
                 isPresented: $viewModel.isShowingPhotoPicker,
-                selection: $viewModel.selectedImageItem,
+                selection: $viewModel.selectedImageItems,
+                maxSelectionCount: nil,
+                selectionBehavior: .ordered,
                 matching: .images
             )
-            .onChange(of: viewModel.selectedImageItem) { _, newItem in
-                viewModel.importImage(from: newItem)
+            .onChange(of: viewModel.selectedImageItems) { _, newItems in
+                viewModel.importImages(from: newItems)
             }
             .confirmationDialog("Replace Pattern", isPresented: $viewModel.isShowingReplacementOptions) {
                 Button("Import PDF") {
                     viewModel.showPDFImporter()
                 }
-                Button("Choose Photo") {
+                Button("Choose Photos") {
                     viewModel.showPhotoPicker()
                 }
                 Button("Write or Paste Text") {
@@ -350,7 +354,7 @@ private struct CreateProjectView: View {
             if viewModel.isImportingPDF {
                 ProgressView("Importing PDF…")
             } else if viewModel.isImportingImage {
-                ProgressView("Importing photo…")
+                ProgressView("Importing photos…")
             }
 
             if let errorMessage = viewModel.errorMessage {
@@ -379,8 +383,8 @@ private struct CreateProjectView: View {
                 viewModel.showPhotoPicker()
             } label: {
                 PatternImportAction(
-                    title: "Choose Photo",
-                    description: "Select one photo or screenshot",
+                    title: "Choose Photos",
+                    description: "Select photos or screenshots in page order",
                     systemImage: "photo"
                 )
             }
@@ -427,12 +431,12 @@ private struct CreateProjectView: View {
 
     @ViewBuilder
     private var sourcePreview: some View {
-        if viewModel.draft.sourceType == .image, let imagePath = viewModel.draft.imageFilePath {
+        if viewModel.draft.sourceType == .image, let imagePath = viewModel.draft.imageFilePaths.first {
             StoredImagePreview(storedReference: imagePath, height: 72)
                 .frame(width: 72, height: 72)
                 .clipped()
                 .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
-                .accessibilityLabel("Selected pattern photo")
+                .accessibilityLabel("Selected pattern photos")
         } else {
             Image(systemName: viewModel.draft.sourceType == .pdf ? "doc.fill" : "text.alignleft")
                 .font(.title2.weight(.semibold))
@@ -479,7 +483,7 @@ private struct CreateProjectView: View {
     private var sourceTitle: LocalizedStringResource {
         switch viewModel.draft.sourceType {
         case .pdf: "PDF"
-        case .image: "Photo"
+        case .image: "Photos"
         case .text: "Pattern text added"
         case nil: "Add a pattern"
         }
@@ -490,7 +494,7 @@ private struct CreateProjectView: View {
         case .pdf:
             viewModel.draft.sourceFileName ?? String(localized: "PDF selected")
         case .image:
-            String(localized: "Photo selected")
+            String(localized: "\(viewModel.draft.imageFilePaths.count) photos selected")
         case .text:
             String(localized: "\(viewModel.draft.trimmedSourceText.count) characters")
         case nil:

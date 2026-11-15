@@ -80,7 +80,7 @@ final class ProjectPersistenceTests: XCTestCase {
         viewModel.draft.subtitle = "For Alex"
 
         viewModel.importPDF(from: .failure(CocoaError(.userCancelled)))
-        viewModel.importImage(from: nil)
+        viewModel.importImages(from: [])
 
         XCTAssertEqual(viewModel.draft.name, "Scarf")
         XCTAssertEqual(viewModel.draft.subtitle, "For Alex")
@@ -105,9 +105,9 @@ final class ProjectPersistenceTests: XCTestCase {
         XCTAssertEqual(viewModel.draft.sourceType, .pdf)
         XCTAssertEqual(viewModel.draft.sourceFileName, "Cable.pdf")
 
-        viewModel.adoptImage(path: "photo.jpg", fileName: "photo.jpg")
+        viewModel.adoptImages(paths: ["first.jpg", "second.jpg"])
         XCTAssertEqual(viewModel.draft.sourceType, .image)
-        XCTAssertEqual(viewModel.draft.imageFilePath, "photo.jpg")
+        XCTAssertEqual(viewModel.draft.imageFilePaths, ["first.jpg", "second.jpg"])
 
         viewModel.savePatternText("Row 1: knit")
         XCTAssertEqual(viewModel.draft.sourceType, .text)
@@ -395,5 +395,41 @@ struct PDFReadingStatePersistenceTests {
         viewModel.restoreSelectedMetric(for: project)
 
         #expect(viewModel.selectedMetric == .row)
+    }
+}
+
+@Suite("Image Reading State Persistence")
+struct ImageReadingStatePersistenceTests {
+    @Test @MainActor
+    func persistsReadingPosition() throws {
+        let container = try ModelContainer(
+            for: Project.self, ProjectNote.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let project = Project(name: "Printed Pattern", sourceType: .image)
+        project.lastImagePageIndex = 2
+        project.lastImagePageVerticalPosition = 0.625
+        context.insert(project)
+        try context.save()
+
+        let freshContext = ModelContext(container)
+        let savedProject = try #require(try freshContext.fetch(FetchDescriptor<Project>()).first)
+
+        #expect(savedProject.lastImagePageIndex == 2)
+        #expect(savedProject.lastImagePageVerticalPosition == 0.625)
+    }
+
+    @Test @MainActor
+    func clampsInvalidReadingPosition() {
+        let project = Project(name: "Printed Pattern", sourceType: .image)
+        project.lastImagePageIndex = -4
+        project.lastImagePageVerticalPosition = 1.5
+        let viewModel = ImageReadingViewModel()
+
+        let position = viewModel.restoreReadingPosition(for: project)
+
+        #expect(position.pageIndex == 0)
+        #expect(position.verticalPosition == 1)
     }
 }

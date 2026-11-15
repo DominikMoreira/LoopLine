@@ -87,7 +87,7 @@ struct ProjectDetailView: View {
             if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
                 if ImportedPDFStorage.fileURL(for: project) != nil {
                     NavigationLink {
-                        PDFReadingView(project: project)
+                        ProjectReadingView(project: project)
                     } label: {
                         pdfPreview(storedReference: sourceFilePath)
                             .contentShape(Rectangle())
@@ -99,21 +99,43 @@ struct ProjectDetailView: View {
                     pdfPreview(storedReference: sourceFilePath)
                 }
             } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
-                StoredImagePreview(storedReference: sourceFilePath, height: 190)
-                    .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                if ImportedImageStorage.fileURL(for: sourceFilePath) != nil {
+                    NavigationLink {
+                        ProjectReadingView(project: project)
+                    } label: {
+                        imagePreview(storedReference: sourceFilePath)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Open image instructions")
+                    .accessibilityIdentifier("openImagePreview")
+                } else {
+                    imagePreview(storedReference: sourceFilePath)
+                }
             } else {
-                LoopLineSourcePlaceholder(sourceType: project.sourceType, label: "Cover Image")
-                    .frame(height: 190)
+                NavigationLink {
+                    ProjectReadingView(project: project)
+                } label: {
+                    LoopLineSourcePlaceholder(sourceType: project.sourceType, label: "Cover Image")
+                        .frame(height: 190)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open text instructions")
             }
         }
     }
 
     private func pdfPreview(storedReference: String) -> some View {
         StoredPDFPreview(storedReference: storedReference, height: 190)
+            .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            }
+    }
+
+    private func imagePreview(storedReference: String) -> some View {
+        StoredImagePreview(storedReference: storedReference, height: 190)
             .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
@@ -168,7 +190,7 @@ struct ProjectDetailView: View {
     private var readingActions: some View {
         VStack(spacing: 12) {
             NavigationLink {
-                readingDestination
+                ProjectReadingView(project: project)
             } label: {
                 Text("Open Reading Mode")
             }
@@ -181,18 +203,6 @@ struct ProjectDetailView: View {
                 }
                 .buttonStyle(LoopLineSecondaryButtonStyle())
             }
-        }
-    }
-
-    @ViewBuilder
-    private var readingDestination: some View {
-        switch project.sourceType {
-        case .pdf:
-            PDFReadingView(project: project)
-        case .image:
-            ImageReadingView(project: project)
-        case .text:
-            ReadingModeView(project: project)
         }
     }
 
