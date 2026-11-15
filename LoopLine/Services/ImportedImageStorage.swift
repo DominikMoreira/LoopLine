@@ -77,4 +77,8 @@ enum ImportedImageStorage {
 
         try? FileManager.default.removeItem(at: fileURL)
     }
+
+    static func delete(storedReferences: [String]) {
+        Set(storedReferences).forEach { delete(storedReference: $0) }
+    }
 }

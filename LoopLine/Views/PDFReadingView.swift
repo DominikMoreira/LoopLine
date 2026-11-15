@@ -6,13 +6,8 @@ import SwiftUI
 
 struct PDFReadingView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var settings: [AppSettings]
     @Bindable var project: Project
     @State private var viewModel = PDFReadingViewModel()
-
-    private var usesLargeControls: Bool {
-        settings.first?.largeControls ?? true
-    }
 
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -20,11 +15,6 @@ struct PDFReadingView: View {
         Group {
             if let pdfURL = viewModel.pdfURL(for: project) {
                 VStack(spacing: 0) {
-                    ReadingTrackingControls(project: project, usesLargeControls: usesLargeControls)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 10)
-
                     PDFKitView(
                         url: pdfURL,
                         isMarkupActive: viewModel.isMarkupActive,
@@ -54,11 +44,6 @@ struct PDFReadingView: View {
                 .background(LoopLineTheme.readingBackground.ignoresSafeArea())
             } else {
                 VStack(spacing: 0) {
-                    ReadingTrackingControls(project: project, usesLargeControls: usesLargeControls)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 10)
-
                     ContentUnavailableView(
                         "PDF Unavailable",
                         systemImage: "doc.richtext",
@@ -71,10 +56,6 @@ struct PDFReadingView: View {
             }
         }
         .accessibilityIdentifier("pdfReadingMode")
-        .navigationTitle("Reading Mode")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(LoopLineTheme.readingBackground, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             Button {
                 viewModel.isMarkupActive.toggle()

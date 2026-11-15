@@ -19,9 +19,12 @@ final class Project {
     var lastCounterChangedAt: Date?
     var lastPDFPageIndex: Int = 0
     var lastPDFPageVerticalPosition: Double = 0
+    var lastImagePageIndex: Int = 0
+    var lastImagePageVerticalPosition: Double = 0
     var rows: [String]
     var sourceText: String?
     var sourceFilePath: String?
+    var imageFilePaths: [String] = []
     var coverImagePath: String?
 
     @Relationship(deleteRule: .cascade, inverse: \ProjectNote.project)
@@ -40,6 +43,7 @@ final class Project {
         rows: [String] = [],
         sourceText: String? = nil,
         sourceFilePath: String? = nil,
+        imageFilePaths: [String] = [],
         coverImagePath: String? = nil,
         notes: [ProjectNote] = []
     ) {
@@ -55,7 +59,18 @@ final class Project {
         self.rows = rows
         self.sourceText = sourceText
         self.sourceFilePath = sourceFilePath
+        self.imageFilePaths = imageFilePaths
         self.coverImagePath = coverImagePath
         self.notes = notes
+    }
+
+    var imageReferences: [String] {
+        guard sourceType == .image else { return [] }
+
+        if !imageFilePaths.isEmpty {
+            return imageFilePaths
+        }
+
+        return sourceFilePath.map { [$0] } ?? []
     }
 }

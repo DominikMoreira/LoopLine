@@ -19,14 +19,6 @@ struct ReadingModeView: View {
 
         ScrollViewReader { proxy in
             VStack(spacing: 0) {
-                ReadingTrackingControls(
-                    project: project,
-                    usesLargeControls: appSettings.largeControls
-                )
-                .padding(.horizontal, 18)
-                .padding(.top, 12)
-                .padding(.bottom, 10)
-
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         readingPanel
@@ -35,11 +27,6 @@ struct ReadingModeView: View {
                     .padding(.top, 8)
                 }
             }
-            .background(readingBackground.ignoresSafeArea())
-            .navigationTitle("Reading Mode")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(readingBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 Button {
                     viewModel.isShowingResetConfirmation = true
