@@ -19,10 +19,12 @@ final class ProjectListViewModel {
 
     var deleteConfirmationMessage: String {
         guard let projectPendingDeletion else {
-            return "This will permanently delete this project and its notes. This cannot be undone."
+            return
+                "This will permanently delete this project and its notes. This cannot be undone."
         }
 
-        return "This will permanently delete \(projectPendingDeletion.name) and its notes. This cannot be undone."
+        return
+            "This will permanently delete \(projectPendingDeletion.name) and its notes. This cannot be undone."
     }
 
     func showCreateProject() {
@@ -40,14 +42,20 @@ final class ProjectListViewModel {
 
         let project = Project(
             name: draft.trimmedName,
-            subtitle: draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle,
+            subtitleSize: draft.trimmedSubtitleSize.isEmpty
+                ? nil : draft.trimmedSubtitleSize,
+            subtitleNeedleSize: draft.trimmedSubtitleNeedleSize.isEmpty
+                ? nil : draft.trimmedSubtitleNeedleSize,
+            subtitleYarnType: draft.trimmedSubtitleYarnType.isEmpty
+                ? nil : draft.trimmedSubtitleYarnType,
             sourceType: sourceType,
             currentRow: 0,
             repeatCurrent: 0,
             currentStitch: 0,
             repeatTotal: nil,
             rows: sourceType == .text ? draft.rows : [],
-            sourceText: sourceType == .text && !draft.trimmedSourceText.isEmpty ? draft.trimmedSourceText : nil,
+            sourceText: sourceType == .text && !draft.trimmedSourceText.isEmpty
+                ? draft.trimmedSourceText : nil,
             sourceFilePath: sourceFilePath(from: draft, sourceType: sourceType),
             imageFilePaths: sourceType == .image ? draft.imageFilePaths : [],
             notes: []
@@ -75,7 +83,10 @@ final class ProjectListViewModel {
         save(modelContext)
     }
 
-    private func sourceFilePath(from draft: NewProjectDraft, sourceType: ImportSource) -> String? {
+    private func sourceFilePath(
+        from draft: NewProjectDraft,
+        sourceType: ImportSource
+    ) -> String? {
         switch sourceType {
         case .pdf:
             draft.sourceFilePath

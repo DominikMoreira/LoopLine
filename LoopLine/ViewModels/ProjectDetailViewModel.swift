@@ -11,8 +11,12 @@ struct NoteDraft {
     }
 
     var rowNumber: Int? {
-        let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedRow.isEmpty, let rowNumber = Int(trimmedRow), rowNumber >= 0 else {
+        let trimmedRow = rowNumberText.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard !trimmedRow.isEmpty, let rowNumber = Int(trimmedRow),
+            rowNumber >= 0
+        else {
             return nil
         }
         return rowNumber
@@ -33,26 +37,40 @@ struct NoteDraft {
     }
 
     private var hasValidRowNumber: Bool {
-        let trimmedRow = rowNumberText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedRow = rowNumberText.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
         return trimmedRow.isEmpty || rowNumber != nil
     }
 }
 
 struct EditProjectDraft {
     var name: String
-    var subtitle: String
+    var subtitleSize: String
+    var subtitleNeedleSize: String
+    var subtitleYarnType: String
 
     init(project: Project) {
         name = project.name
-        subtitle = project.subtitle ?? ""
+        subtitleSize = project.subtitleSize ?? ""
+        subtitleNeedleSize = project.subtitleNeedleSize ?? ""
+        subtitleYarnType = project.subtitleYarnType ?? ""
     }
 
     var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    var trimmedSubtitle: String {
-        subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    var trimmedSubtitleSize: String {
+        subtitleSize.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedSubtitleNeedleSize: String {
+        subtitleNeedleSize.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedSubtitleYarnType: String {
+        subtitleYarnType.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var isValid: Bool {
@@ -123,45 +141,73 @@ final class ProjectDetailViewModel {
     func incrementRow(for project: Project, in modelContext: ModelContext) {
         guard canIncreaseRow(for: project) else { return }
         project.currentRow += 1
-        project.recordLastCounterChange(metric: .row, value: project.currentRow, direction: .increased)
+        project.recordLastCounterChange(
+            metric: .row,
+            value: project.currentRow,
+            direction: .increased
+        )
         save(modelContext)
     }
 
     func decrementRow(for project: Project, in modelContext: ModelContext) {
         guard project.currentRow > 0 else { return }
         project.currentRow -= 1
-        project.recordLastCounterChange(metric: .row, value: project.currentRow, direction: .decreased)
+        project.recordLastCounterChange(
+            metric: .row,
+            value: project.currentRow,
+            direction: .decreased
+        )
         save(modelContext)
     }
 
     func incrementRepeat(for project: Project, in modelContext: ModelContext) {
         guard canIncreaseRepeat(for: project) else { return }
         project.repeatCurrent += 1
-        project.recordLastCounterChange(metric: .repeatCount, value: project.repeatCurrent, direction: .increased)
+        project.recordLastCounterChange(
+            metric: .repeatCount,
+            value: project.repeatCurrent,
+            direction: .increased
+        )
         save(modelContext)
     }
 
     func decrementRepeat(for project: Project, in modelContext: ModelContext) {
         guard project.repeatCurrent > 0 else { return }
         project.repeatCurrent -= 1
-        project.recordLastCounterChange(metric: .repeatCount, value: project.repeatCurrent, direction: .decreased)
+        project.recordLastCounterChange(
+            metric: .repeatCount,
+            value: project.repeatCurrent,
+            direction: .decreased
+        )
         save(modelContext)
     }
 
     func incrementStitch(for project: Project, in modelContext: ModelContext) {
         project.currentStitch += 1
-        project.recordLastCounterChange(metric: .stitches, value: project.currentStitch, direction: .increased)
+        project.recordLastCounterChange(
+            metric: .stitches,
+            value: project.currentStitch,
+            direction: .increased
+        )
         save(modelContext)
     }
 
     func decrementStitch(for project: Project, in modelContext: ModelContext) {
         guard project.currentStitch > 0 else { return }
         project.currentStitch -= 1
-        project.recordLastCounterChange(metric: .stitches, value: project.currentStitch, direction: .decreased)
+        project.recordLastCounterChange(
+            metric: .stitches,
+            value: project.currentStitch,
+            direction: .decreased
+        )
         save(modelContext)
     }
 
-    func addNote(from draft: NoteDraft, to project: Project, in modelContext: ModelContext) {
+    func addNote(
+        from draft: NoteDraft,
+        to project: Project,
+        in modelContext: ModelContext
+    ) {
         let note = ProjectNote(
             text: draft.trimmedText,
             rowNumber: draft.rowNumber
@@ -173,7 +219,11 @@ final class ProjectDetailViewModel {
         isShowingAddNote = false
     }
 
-    func updateNote(_ note: ProjectNote, from draft: NoteDraft, in modelContext: ModelContext) {
+    func updateNote(
+        _ note: ProjectNote,
+        from draft: NoteDraft,
+        in modelContext: ModelContext
+    ) {
         note.text = draft.trimmedText
         note.rowNumber = draft.rowNumber
         save(modelContext)
@@ -190,7 +240,11 @@ final class ProjectDetailViewModel {
         save(modelContext)
     }
 
-    func importPastedText(_ text: String, into project: Project, in modelContext: ModelContext) {
+    func importPastedText(
+        _ text: String,
+        into project: Project,
+        in modelContext: ModelContext
+    ) {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         project.sourceType = .text
         project.sourceText = trimmedText
@@ -223,7 +277,14 @@ final class EditProjectViewModel {
 
     func saveProject(_ project: Project, in modelContext: ModelContext) {
         project.name = draft.trimmedName
-        project.subtitle = draft.trimmedSubtitle.isEmpty ? nil : draft.trimmedSubtitle
+        project.subtitleSize =
+            draft.trimmedSubtitleSize.isEmpty ? nil : draft.trimmedSubtitleSize
+        project.subtitleNeedleSize =
+            draft.trimmedSubtitleNeedleSize.isEmpty
+            ? nil : draft.trimmedSubtitleNeedleSize
+        project.subtitleYarnType =
+            draft.trimmedSubtitleYarnType.isEmpty
+            ? nil : draft.trimmedSubtitleYarnType
         try? modelContext.save()
     }
 }

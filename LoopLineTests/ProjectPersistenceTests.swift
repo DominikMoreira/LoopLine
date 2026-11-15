@@ -9,14 +9,20 @@ import SwiftData
 import Testing
 import UIKit
 import XCTest
+
 @testable import LoopLine
 
 final class ProjectPersistenceTests: XCTestCase {
     func testPartialErasingSplitsMarkupStroke() {
         let stroke = PDFMarkupStroke(
             pageIndex: 0,
-            points: [PDFMarkupPoint(CGPoint(x: 0, y: 0)), PDFMarkupPoint(CGPoint(x: 100, y: 0))],
-            color: PDFMarkupColor(UIColor(red: 1, green: 0.8, blue: 0, alpha: 0.38)),
+            points: [
+                PDFMarkupPoint(CGPoint(x: 0, y: 0)),
+                PDFMarkupPoint(CGPoint(x: 100, y: 0)),
+            ],
+            color: PDFMarkupColor(
+                UIColor(red: 1, green: 0.8, blue: 0, alpha: 0.38)
+            ),
             width: 10,
             isMarker: true
         )
@@ -31,13 +37,21 @@ final class ProjectPersistenceTests: XCTestCase {
     func testErasingOutsideMarkupKeepsOriginalStroke() {
         let stroke = PDFMarkupStroke(
             pageIndex: 0,
-            points: [PDFMarkupPoint(CGPoint(x: 0, y: 0)), PDFMarkupPoint(CGPoint(x: 100, y: 0))],
-            color: PDFMarkupColor(UIColor(red: 1, green: 0.8, blue: 0, alpha: 0.38)),
+            points: [
+                PDFMarkupPoint(CGPoint(x: 0, y: 0)),
+                PDFMarkupPoint(CGPoint(x: 100, y: 0)),
+            ],
+            color: PDFMarkupColor(
+                UIColor(red: 1, green: 0.8, blue: 0, alpha: 0.38)
+            ),
             width: 10,
             isMarker: true
         )
 
-        let fragments = stroke.erasing(at: CGPoint(x: 50, y: 50), withRadius: 10)
+        let fragments = stroke.erasing(
+            at: CGPoint(x: 50, y: 50),
+            withRadius: 10
+        )
 
         XCTAssertEqual(fragments.first?.id, stroke.id)
     }
@@ -45,14 +59,24 @@ final class ProjectPersistenceTests: XCTestCase {
     @MainActor
     func testPDFURLRequiresPDFSourceAndExistingFile() throws {
         let fileURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("LoopLine-PDF-Resolver-\(UUID().uuidString).pdf")
+            .appendingPathComponent(
+                "LoopLine-PDF-Resolver-\(UUID().uuidString).pdf"
+            )
         try Data().write(to: fileURL)
         defer { try? FileManager.default.removeItem(at: fileURL) }
 
-        let pdfProject = Project(name: "PDF", sourceType: .pdf, sourceFilePath: fileURL.path)
+        let pdfProject = Project(
+            name: "PDF",
+            sourceType: .pdf,
+            sourceFilePath: fileURL.path
+        )
         XCTAssertEqual(ImportedPDFStorage.fileURL(for: pdfProject), fileURL)
 
-        let textProject = Project(name: "Text", sourceType: .text, sourceFilePath: fileURL.path)
+        let textProject = Project(
+            name: "Text",
+            sourceType: .text,
+            sourceFilePath: fileURL.path
+        )
         XCTAssertNil(ImportedPDFStorage.fileURL(for: textProject))
 
         let missingPDFProject = Project(name: "Missing PDF", sourceType: .pdf)
@@ -77,13 +101,13 @@ final class ProjectPersistenceTests: XCTestCase {
     func testCancelledPickersPreserveFormState() {
         let viewModel = CreateProjectViewModel()
         viewModel.draft.name = "Scarf"
-        viewModel.draft.subtitle = "For Alex"
+        viewModel.draft.subtitleSize = "For Alex"
 
         viewModel.importPDF(from: .failure(CocoaError(.userCancelled)))
         viewModel.importImages(from: [])
 
         XCTAssertEqual(viewModel.draft.name, "Scarf")
-        XCTAssertEqual(viewModel.draft.subtitle, "For Alex")
+        XCTAssertEqual(viewModel.draft.subtitleSize, "For Alex")
         XCTAssertNil(viewModel.errorMessage)
     }
 
@@ -107,7 +131,10 @@ final class ProjectPersistenceTests: XCTestCase {
 
         viewModel.adoptImages(paths: ["first.jpg", "second.jpg"])
         XCTAssertEqual(viewModel.draft.sourceType, .image)
-        XCTAssertEqual(viewModel.draft.imageFilePaths, ["first.jpg", "second.jpg"])
+        XCTAssertEqual(
+            viewModel.draft.imageFilePaths,
+            ["first.jpg", "second.jpg"]
+        )
 
         viewModel.savePatternText("Row 1: knit")
         XCTAssertEqual(viewModel.draft.sourceType, .text)
@@ -125,17 +152,47 @@ final class ProjectPersistenceTests: XCTestCase {
         let viewModel = ProjectListViewModel()
         var draft = NewProjectDraft()
         draft.name = "  Cable Hat  "
-        draft.subtitle = "  Winter gift  "
+        draft.subtitleSize = "  Winter gift  "
+        draft.subtitleNeedleSize = "  4 mm  "
+        draft.subtitleYarnType = "  Merino wool  "
         draft.setPastedText("  Row 1: knit  ")
 
         try viewModel.createProject(from: draft, in: context)
 
-        let savedProject = try XCTUnwrap(try context.fetch(FetchDescriptor<Project>()).first)
+        let savedProject = try XCTUnwrap(
+            try context.fetch(FetchDescriptor<Project>()).first
+        )
         XCTAssertEqual(savedProject.name, "Cable Hat")
-        XCTAssertEqual(savedProject.subtitle, "Winter gift")
+        XCTAssertEqual(savedProject.subtitleSize, "Winter gift")
+        XCTAssertEqual(savedProject.subtitleNeedleSize, "4 mm")
+        XCTAssertEqual(savedProject.subtitleYarnType, "Merino wool")
         XCTAssertEqual(savedProject.sourceType, .text)
         XCTAssertEqual(savedProject.sourceText, "Row 1: knit")
         XCTAssertEqual(savedProject.rows, ["Row 1: knit"])
+    }
+
+    @MainActor
+    func testEditingProjectPersistsTrimmedMaterialDetailsWithoutSubtitle()
+        throws
+    {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let project = Project(name: "Scarf", sourceType: .text)
+        context.insert(project)
+        try context.save()
+
+        let viewModel = EditProjectViewModel(project: project)
+        viewModel.draft.subtitleNeedleSize = "  3.5 mm  "
+        viewModel.draft.subtitleYarnType = "  Cotton  "
+        viewModel.saveProject(project, in: context)
+
+        let freshContext = ModelContext(container)
+        let savedProject = try XCTUnwrap(
+            try freshContext.fetch(FetchDescriptor<Project>()).first
+        )
+        XCTAssertNil(savedProject.subtitleSize)
+        XCTAssertEqual(savedProject.subtitleNeedleSize, "3.5 mm")
+        XCTAssertEqual(savedProject.subtitleYarnType, "Cotton")
     }
 
     @MainActor
@@ -145,7 +202,7 @@ final class ProjectPersistenceTests: XCTestCase {
         let listViewModel = ProjectListViewModel()
         let createViewModel = CreateProjectViewModel()
         createViewModel.draft.name = "Scarf"
-        createViewModel.draft.subtitle = "Blue"
+        createViewModel.draft.subtitleSize = "Blue"
         createViewModel.savePatternText("Knit every row")
 
         createViewModel.createProject { draft in
@@ -155,7 +212,7 @@ final class ProjectPersistenceTests: XCTestCase {
         }
 
         XCTAssertEqual(createViewModel.draft.name, "Scarf")
-        XCTAssertEqual(createViewModel.draft.subtitle, "Blue")
+        XCTAssertEqual(createViewModel.draft.subtitleSize, "Blue")
         XCTAssertEqual(createViewModel.draft.sourceText, "Knit every row")
         XCTAssertNotNil(createViewModel.errorMessage)
         XCTAssertFalse(createViewModel.didCreateProject)
@@ -206,7 +263,9 @@ final class ProjectPersistenceTests: XCTestCase {
         let draft = NoteDraft(text: "  Updated note  ", rowNumberText: "5")
         ProjectDetailViewModel().updateNote(note, from: draft, in: context)
 
-        let savedNote = try XCTUnwrap(try context.fetch(FetchDescriptor<ProjectNote>()).first)
+        let savedNote = try XCTUnwrap(
+            try context.fetch(FetchDescriptor<ProjectNote>()).first
+        )
         XCTAssertEqual(savedNote.text, "Updated note")
         XCTAssertEqual(savedNote.rowNumber, 5)
     }
@@ -264,7 +323,12 @@ final class ProjectPersistenceTests: XCTestCase {
         let context = ModelContext(container)
         let project = Project(name: "Scarf", sourceType: .pdf)
         let timestamp = Date(timeIntervalSinceReferenceDate: 12_345)
-        project.recordLastCounterChange(metric: .repeatCount, value: 2, direction: .decreased, timestamp: timestamp)
+        project.recordLastCounterChange(
+            metric: .repeatCount,
+            value: 2,
+            direction: .decreased,
+            timestamp: timestamp
+        )
         let viewModel = PDFReadingViewModel()
 
         viewModel.decrementSelectedMetric(for: project, in: context)
@@ -282,7 +346,12 @@ final class ProjectPersistenceTests: XCTestCase {
         let context = ModelContext(container)
         let project = Project(name: "Scarf", sourceType: .pdf)
         let timestamp = Date(timeIntervalSinceReferenceDate: 12_345)
-        project.recordLastCounterChange(metric: .row, value: 4, direction: .increased, timestamp: timestamp)
+        project.recordLastCounterChange(
+            metric: .row,
+            value: 4,
+            direction: .increased,
+            timestamp: timestamp
+        )
         let viewModel = PDFReadingViewModel()
 
         viewModel.selectMetric(.repeatCount, for: project, in: context)
@@ -318,19 +387,30 @@ final class ProjectPersistenceTests: XCTestCase {
         let context = ModelContext(container)
         let firstProject = Project(name: "Scarf", sourceType: .text)
         let secondProject = Project(name: "Socks", sourceType: .text)
-        firstProject.recordLastCounterChange(metric: .stitches, value: 24, direction: .increased)
+        firstProject.recordLastCounterChange(
+            metric: .stitches,
+            value: 24,
+            direction: .increased
+        )
         context.insert(firstProject)
         context.insert(secondProject)
         try context.save()
 
         let freshContext = ModelContext(container)
         let savedProjects = try freshContext.fetch(FetchDescriptor<Project>())
-        let savedFirstProject = try XCTUnwrap(savedProjects.first { $0.id == firstProject.id })
-        let savedSecondProject = try XCTUnwrap(savedProjects.first { $0.id == secondProject.id })
+        let savedFirstProject = try XCTUnwrap(
+            savedProjects.first { $0.id == firstProject.id }
+        )
+        let savedSecondProject = try XCTUnwrap(
+            savedProjects.first { $0.id == secondProject.id }
+        )
 
         XCTAssertEqual(savedFirstProject.lastCounterChange?.metric, .stitches)
         XCTAssertEqual(savedFirstProject.lastCounterChange?.value, 24)
-        XCTAssertEqual(savedFirstProject.lastCounterChange?.direction, .increased)
+        XCTAssertEqual(
+            savedFirstProject.lastCounterChange?.direction,
+            .increased
+        )
         XCTAssertNotNil(savedFirstProject.lastCounterChange?.timestamp)
         XCTAssertNil(savedSecondProject.lastCounterChange)
     }
@@ -339,12 +419,31 @@ final class ProjectPersistenceTests: XCTestCase {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         let locale = Locale(identifier: "en_US")
-        let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 18, hour: 17, minute: 48)) ?? .now
+        let now =
+            calendar.date(
+                from: DateComponents(
+                    year: 2026,
+                    month: 10,
+                    day: 18,
+                    hour: 17,
+                    minute: 48
+                )
+            ) ?? .now
         let today = calendar.date(byAdding: .minute, value: -1, to: now) ?? now
         let yesterday = calendar.date(byAdding: .day, value: -1, to: now) ?? now
 
-        let todayText = LastCounterChangeFormatter.timestampText(for: today, now: now, calendar: calendar, locale: locale)
-        let olderText = LastCounterChangeFormatter.timestampText(for: yesterday, now: now, calendar: calendar, locale: locale)
+        let todayText = LastCounterChangeFormatter.timestampText(
+            for: today,
+            now: now,
+            calendar: calendar,
+            locale: locale
+        )
+        let olderText = LastCounterChangeFormatter.timestampText(
+            for: yesterday,
+            now: now,
+            calendar: calendar,
+            locale: locale
+        )
 
         XCTAssertFalse(todayText.contains("2026"))
         XCTAssertTrue(olderText.contains("2026"))
@@ -352,7 +451,8 @@ final class ProjectPersistenceTests: XCTestCase {
 
     private func makeContainer() throws -> ModelContainer {
         try ModelContainer(
-            for: Project.self, ProjectNote.self,
+            for: Project.self,
+            ProjectNote.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
     }
@@ -367,23 +467,30 @@ struct PDFReadingStatePersistenceTests {
     @Test @MainActor
     func persistsReadingPositionAndSelectedMetric() throws {
         let container = try ModelContainer(
-            for: Project.self, ProjectNote.self,
+            for: Project.self,
+            ProjectNote.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = ModelContext(container)
         let project = Project(name: "Cable Chart", sourceType: .pdf)
         project.lastPDFPageIndex = 4
         project.lastPDFPageVerticalPosition = 0.375
-        project.selectedTrackingMetricRawValue = ReadingTrackingMetric.stitches.rawValue
+        project.selectedTrackingMetricRawValue =
+            ReadingTrackingMetric.stitches.rawValue
         context.insert(project)
         try context.save()
 
         let freshContext = ModelContext(container)
-        let savedProject = try #require(try freshContext.fetch(FetchDescriptor<Project>()).first)
+        let savedProject = try #require(
+            try freshContext.fetch(FetchDescriptor<Project>()).first
+        )
 
         #expect(savedProject.lastPDFPageIndex == 4)
         #expect(savedProject.lastPDFPageVerticalPosition == 0.375)
-        #expect(savedProject.selectedTrackingMetricRawValue == ReadingTrackingMetric.stitches.rawValue)
+        #expect(
+            savedProject.selectedTrackingMetricRawValue
+                == ReadingTrackingMetric.stitches.rawValue
+        )
     }
 
     @Test @MainActor
@@ -403,7 +510,8 @@ struct ImageReadingStatePersistenceTests {
     @Test @MainActor
     func persistsReadingPosition() throws {
         let container = try ModelContainer(
-            for: Project.self, ProjectNote.self,
+            for: Project.self,
+            ProjectNote.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         let context = ModelContext(container)
@@ -414,7 +522,9 @@ struct ImageReadingStatePersistenceTests {
         try context.save()
 
         let freshContext = ModelContext(container)
-        let savedProject = try #require(try freshContext.fetch(FetchDescriptor<Project>()).first)
+        let savedProject = try #require(
+            try freshContext.fetch(FetchDescriptor<Project>()).first
+        )
 
         #expect(savedProject.lastImagePageIndex == 2)
         #expect(savedProject.lastImagePageVerticalPosition == 0.625)

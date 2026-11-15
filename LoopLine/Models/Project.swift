@@ -5,14 +5,18 @@ import SwiftData
 final class Project {
     var id: UUID
     var name: String
-    var subtitle: String?
+    @Attribute(originalName: "subtitle")
+    var subtitleSize: String?
+    var subtitleNeedleSize: String?
+    var subtitleYarnType: String?
     var detailMeta: String?
     var sourceType: ImportSource
     var currentRow: Int
     var repeatCurrent: Int
     var currentStitch: Int = 0
     var repeatTotal: Int?
-    var selectedTrackingMetricRawValue: String = ReadingTrackingMetric.row.rawValue
+    var selectedTrackingMetricRawValue: String = ReadingTrackingMetric.row
+        .rawValue
     var lastCounterMetricRawValue: String?
     var lastCounterValue: Int?
     var lastCounterChangeDirectionRawValue: String?
@@ -33,7 +37,9 @@ final class Project {
     init(
         id: UUID = UUID(),
         name: String,
-        subtitle: String? = nil,
+        subtitleSize: String? = nil,
+        subtitleNeedleSize: String? = nil,
+        subtitleYarnType: String? = nil,
         detailMeta: String? = nil,
         sourceType: ImportSource,
         currentRow: Int = 0,
@@ -49,7 +55,9 @@ final class Project {
     ) {
         self.id = id
         self.name = name
-        self.subtitle = subtitle
+        self.subtitleSize = subtitleSize
+        self.subtitleNeedleSize = subtitleNeedleSize
+        self.subtitleYarnType = subtitleYarnType
         self.detailMeta = detailMeta
         self.sourceType = sourceType
         self.currentRow = currentRow
