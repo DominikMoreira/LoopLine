@@ -30,7 +30,10 @@ struct ProjectListView: View {
                     try viewModel.createProject(from: draft, in: modelContext)
                 }
             }
-            .alert("Delete Project?", isPresented: $viewModel.isShowingDeleteConfirmation) {
+            .alert(
+                "Delete Project?",
+                isPresented: $viewModel.isShowingDeleteConfirmation
+            ) {
                 Button("Delete Project", role: .destructive) {
                     viewModel.confirmProjectDeletion(in: modelContext)
                 }
@@ -90,11 +93,13 @@ struct ProjectListView: View {
                     .font(.title3.weight(.bold))
                     .foregroundStyle(LoopLineTheme.primaryText)
 
-                Text("Add your first knitting pattern - from a PDF, photo, or pasted text.")
-                    .font(.body)
-                    .foregroundStyle(LoopLineTheme.secondaryText)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 300)
+                Text(
+                    "Add your first knitting pattern - from a PDF, photo, or pasted text."
+                )
+                .font(.body)
+                .foregroundStyle(LoopLineTheme.secondaryText)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 300)
             }
 
             Button {
@@ -119,7 +124,9 @@ struct ProjectListView: View {
                 ProjectCard(project: project)
             }
             .modifier(UITestProjectIdentifier(projectName: project.name))
-            .listRowInsets(EdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 18))
+            .listRowInsets(
+                EdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 18)
+            )
             .listRowSeparator(.visible)
             .listRowBackground(LoopLineTheme.appBackground)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -182,10 +189,11 @@ private struct ProjectCard: View {
                         LoopLineSourceBadge(sourceType: project.sourceType)
                     }
 
-                    Text(metricSummary)
-                        .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(LoopLineTheme.secondaryText)
-                        .lineLimit(1)
+                    ProjectCardMaterialDetails(
+                        size: project.subtitleSize,
+                        needleSize: project.subtitleNeedleSize,
+                        yarnType: project.subtitleYarnType
+                    )
                 }
 
                 LoopLineProgressBar(progress: progress)
@@ -195,33 +203,83 @@ private struct ProjectCard: View {
         .contentShape(Rectangle())
     }
 
-    private var metricSummary: String {
-        let repeatText = project.repeatTotal.map { "\(project.repeatCurrent)/\($0)" } ?? String(project.repeatCurrent)
-        return String(localized: "Row \(project.currentRow)  x \(repeatText)  \(project.currentStitch) sts")
-    }
-
     @ViewBuilder
     private var thumbnail: some View {
-        if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
+        if project.sourceType == .pdf,
+            let sourceFilePath = project.sourceFilePath
+        {
             StoredPDFPreview(storedReference: sourceFilePath, height: 74)
                 .frame(width: 74, height: 74)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
                 .overlay {
-                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
-        } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+        } else if project.sourceType == .image,
+            let sourceFilePath = project.sourceFilePath
+        {
             StoredImagePreview(storedReference: sourceFilePath, height: 74)
                 .frame(width: 74, height: 74)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
                 .overlay {
-                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
         } else {
             LoopLineSourcePlaceholder(sourceType: project.sourceType)
+        }
+    }
+}
+
+private struct ProjectCardMaterialDetails: View {
+    let size: String?
+    let needleSize: String?
+    let yarnType: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let size, !size.isEmpty {
+                metadataRow(title: "Size", value: size)
+            }
+
+            if let needleSize, !needleSize.isEmpty {
+                metadataRow(title: "Needle Size", value: needleSize)
+            }
+
+            if let yarnType, !yarnType.isEmpty {
+                metadataRow(title: "Yarn Type", value: yarnType)
+            }
+        }
+        .font(.subheadline)
+        .foregroundStyle(LoopLineTheme.secondaryText)
+        .lineLimit(1)
+    }
+
+    private func metadataRow(title: LocalizedStringKey, value: String)
+        -> some View
+    {
+        HStack(spacing: 4) {
+            Text(title)
+                .fontWeight(.semibold)
+            Text(value)
         }
     }
 }
@@ -277,7 +335,8 @@ private struct CreateProjectView: View {
                 .background(.regularMaterial)
             }
             .sheet(isPresented: $viewModel.isShowingTextEditor) {
-                PastedTextImportView(initialText: viewModel.draft.sourceText) { text in
+                PastedTextImportView(initialText: viewModel.draft.sourceText) {
+                    text in
                     viewModel.savePatternText(text)
                 }
             }
@@ -297,7 +356,10 @@ private struct CreateProjectView: View {
             .onChange(of: viewModel.selectedImageItems) { _, newItems in
                 viewModel.importImages(from: newItems)
             }
-            .confirmationDialog("Replace Pattern", isPresented: $viewModel.isShowingReplacementOptions) {
+            .confirmationDialog(
+                "Replace Pattern",
+                isPresented: $viewModel.isShowingReplacementOptions
+            ) {
                 Button("Import PDF") {
                     viewModel.showPDFImporter()
                 }
@@ -309,7 +371,9 @@ private struct CreateProjectView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Choose a new pattern source. Your current pattern stays in place until the replacement succeeds.")
+                Text(
+                    "Choose a new pattern source. Your current pattern stays in place until the replacement succeeds."
+                )
             }
             .onDisappear {
                 viewModel.cleanupDraftFilesIfNeeded()
@@ -326,18 +390,63 @@ private struct CreateProjectView: View {
                 .font(.title3)
                 .textFieldStyle(.plain)
                 .padding(18)
-                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .background(
+                    LoopLineTheme.surface,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
                 .overlay {
-                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
 
-            LoopLineFieldLabel(text: "Subtitle")
-            TextField("Size, yarn, or recipient", text: $viewModel.draft.subtitle)
+            LoopLineFieldLabel(text: "Size")
+            TextField("M", text: $viewModel.draft.subtitleSize)
                 .font(.body)
                 .textFieldStyle(.plain)
                 .padding(16)
-                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .background(
+                    LoopLineTheme.surface,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
+
+            LoopLineFieldLabel(text: "Needle Size")
+            TextField("3mm", text: $viewModel.draft.subtitleNeedleSize)
+                .font(.body)
+                .textFieldStyle(.plain)
+                .padding(16)
+                .background(
+                    LoopLineTheme.surface,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
+
+            LoopLineFieldLabel(text: "Yarn Type")
+            TextField(
+                "Mohair & Cotton",
+                text: $viewModel.draft.subtitleYarnType
+            )
+            .font(.body)
+            .textFieldStyle(.plain)
+            .padding(16)
+            .background(
+                LoopLineTheme.surface,
+                in: RoundedRectangle(
+                    cornerRadius: LoopLineTheme.compactCornerRadius,
+                    style: .continuous
+                )
+            )
+
         }
     }
 
@@ -358,10 +467,13 @@ private struct CreateProjectView: View {
             }
 
             if let errorMessage = viewModel.errorMessage {
-                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(LoopLineTheme.destructive)
-                    .accessibilityLabel("Error: \(errorMessage)")
+                Label(
+                    errorMessage,
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(LoopLineTheme.destructive)
+                .accessibilityLabel("Error: \(errorMessage)")
             }
         }
     }
@@ -422,28 +534,53 @@ private struct CreateProjectView: View {
             }
         }
         .padding(16)
-        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+        .background(
+            LoopLineTheme.surface,
+            in: RoundedRectangle(
+                cornerRadius: LoopLineTheme.cornerRadius,
+                style: .continuous
+            )
+        )
         .overlay {
-            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            RoundedRectangle(
+                cornerRadius: LoopLineTheme.cornerRadius,
+                style: .continuous
+            )
+            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
         }
     }
 
     @ViewBuilder
     private var sourcePreview: some View {
-        if viewModel.draft.sourceType == .image, let imagePath = viewModel.draft.imageFilePaths.first {
+        if viewModel.draft.sourceType == .image,
+            let imagePath = viewModel.draft.imageFilePaths.first
+        {
             StoredImagePreview(storedReference: imagePath, height: 72)
                 .frame(width: 72, height: 72)
                 .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
                 .accessibilityLabel("Selected pattern photos")
         } else {
-            Image(systemName: viewModel.draft.sourceType == .pdf ? "doc.fill" : "text.alignleft")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(LoopLineTheme.accent)
-                .frame(width: 56, height: 56)
-                .background(LoopLineTheme.accentSoft, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
-                .accessibilityHidden(true)
+            Image(
+                systemName: viewModel.draft.sourceType == .pdf
+                    ? "doc.fill" : "text.alignleft"
+            )
+            .font(.title2.weight(.semibold))
+            .foregroundStyle(LoopLineTheme.accent)
+            .frame(width: 56, height: 56)
+            .background(
+                LoopLineTheme.accentSoft,
+                in: RoundedRectangle(
+                    cornerRadius: LoopLineTheme.compactCornerRadius,
+                    style: .continuous
+                )
+            )
+            .accessibilityHidden(true)
         }
     }
 
@@ -494,9 +631,15 @@ private struct CreateProjectView: View {
         case .pdf:
             viewModel.draft.sourceFileName ?? String(localized: "PDF selected")
         case .image:
-            String(localized: "\(viewModel.draft.imageFilePaths.count) photos selected")
+            String(
+                localized:
+                    "\(viewModel.draft.imageFilePaths.count) photos selected"
+            )
         case .text:
-            String(localized: "\(viewModel.draft.trimmedSourceText.count) characters")
+            String(
+                localized:
+                    "\(viewModel.draft.trimmedSourceText.count) characters"
+            )
         case nil:
             ""
         }
@@ -514,7 +657,13 @@ private struct PatternImportAction: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(LoopLineTheme.accent)
                 .frame(width: 44, height: 44)
-                .background(LoopLineTheme.accentSoft, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .background(
+                    LoopLineTheme.accentSoft,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -534,10 +683,19 @@ private struct PatternImportAction: View {
                 .accessibilityHidden(true)
         }
         .padding(14)
-        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+        .background(
+            LoopLineTheme.surface,
+            in: RoundedRectangle(
+                cornerRadius: LoopLineTheme.cornerRadius,
+                style: .continuous
+            )
+        )
         .overlay {
-            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            RoundedRectangle(
+                cornerRadius: LoopLineTheme.cornerRadius,
+                style: .continuous
+            )
+            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
     }
@@ -552,15 +710,17 @@ private struct PatternImportAction: View {
     let container = PreviewModelContainer.make()
     let context = container.mainContext
 
-    context.insert(Project(
-        name: "Sample Scarf",
-        subtitle: "Beginner garter stitch",
-        sourceType: .text,
-        currentRow: 2,
-        repeatCurrent: 0,
-        repeatTotal: 4,
-        rows: ["Cast on", "Knit", "Bind off"]
-    ))
+    context.insert(
+        Project(
+            name: "Sample Scarf",
+            subtitleSize: "Beginner garter stitch",
+            sourceType: .text,
+            currentRow: 2,
+            repeatCurrent: 0,
+            repeatTotal: 4,
+            rows: ["Cast on", "Knit", "Bind off"]
+        )
+    )
 
     return ProjectListView()
         .modelContainer(container)

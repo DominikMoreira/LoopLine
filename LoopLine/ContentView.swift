@@ -43,28 +43,32 @@ struct ContentView: View {
 
             let pdfURL = try makeUITestPDFURL()
             let imageURLs = try makeUITestImageURLs()
-            modelContext.insert(Project(
-                name: "UI Test PDF Project",
-                subtitle: "Prepared UI test project",
-                detailMeta: "PDF",
-                sourceType: .pdf,
-                currentRow: 1,
-                repeatCurrent: 0,
-                repeatTotal: 1,
-                rows: ["Row 1: Knit all stitches."],
-                sourceFilePath: pdfURL.path
-            ))
-            modelContext.insert(Project(
-                name: "UI Test Image Project",
-                subtitle: "Prepared UI test image project",
-                detailMeta: "Images",
-                sourceType: .image,
-                currentRow: 1,
-                repeatCurrent: 0,
-                repeatTotal: 1,
-                sourceFilePath: imageURLs[0].path,
-                imageFilePaths: imageURLs.map(\.path)
-            ))
+            modelContext.insert(
+                Project(
+                    name: "UI Test PDF Project",
+                    subtitleSize: "Prepared UI test project",
+                    detailMeta: "PDF",
+                    sourceType: .pdf,
+                    currentRow: 1,
+                    repeatCurrent: 0,
+                    repeatTotal: 1,
+                    rows: ["Row 1: Knit all stitches."],
+                    sourceFilePath: pdfURL.path
+                )
+            )
+            modelContext.insert(
+                Project(
+                    name: "UI Test Image Project",
+                    subtitleSize: "Prepared UI test image project",
+                    detailMeta: "Images",
+                    sourceType: .image,
+                    currentRow: 1,
+                    repeatCurrent: 0,
+                    repeatTotal: 1,
+                    sourceFilePath: imageURLs[0].path,
+                    imageFilePaths: imageURLs.map(\.path)
+                )
+            )
             try modelContext.save()
         } catch {
             fatalError("Failed to prepare UI test PDF project: \(error)")
@@ -72,17 +76,22 @@ struct ContentView: View {
     }
 
     private func makeUITestPDFURL() throws -> URL {
-        let pdfURL = FileManager.default.temporaryDirectory.appendingPathComponent("LoopLine-UITest-Pattern.pdf")
-        guard !FileManager.default.fileExists(atPath: pdfURL.path) else { return pdfURL }
+        let pdfURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("LoopLine-UITest-Pattern.pdf")
+        guard !FileManager.default.fileExists(atPath: pdfURL.path) else {
+            return pdfURL
+        }
 
-        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
+        let renderer = UIGraphicsPDFRenderer(
+            bounds: CGRect(x: 0, y: 0, width: 612, height: 792)
+        )
         try renderer.writePDF(to: pdfURL) { context in
             context.beginPage()
 
             let text = "LoopLine UI Test Pattern\n\nRow 1: Knit all stitches."
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 24, weight: .semibold),
-                .foregroundColor: UIColor.label
+                .foregroundColor: UIColor.label,
             ]
             text.draw(at: CGPoint(x: 72, y: 72), withAttributes: attributes)
         }
@@ -92,12 +101,19 @@ struct ContentView: View {
 
     private func makeUITestImageURLs() throws -> [URL] {
         let imageURLs = [
-            FileManager.default.temporaryDirectory.appendingPathComponent("LoopLine-UITest-Pattern-1.png"),
-            FileManager.default.temporaryDirectory.appendingPathComponent("LoopLine-UITest-Pattern-2.png")
+            FileManager.default.temporaryDirectory.appendingPathComponent(
+                "LoopLine-UITest-Pattern-1.png"
+            ),
+            FileManager.default.temporaryDirectory.appendingPathComponent(
+                "LoopLine-UITest-Pattern-2.png"
+            ),
         ]
 
-        for (index, imageURL) in imageURLs.enumerated() where !FileManager.default.fileExists(atPath: imageURL.path) {
-            let renderer = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 900))
+        for (index, imageURL) in imageURLs.enumerated()
+        where !FileManager.default.fileExists(atPath: imageURL.path) {
+            let renderer = UIGraphicsImageRenderer(
+                size: CGSize(width: 600, height: 900)
+            )
             let image = renderer.image { context in
                 UIColor.systemBackground.setFill()
                 context.fill(CGRect(x: 0, y: 0, width: 600, height: 900))
@@ -107,7 +123,7 @@ struct ContentView: View {
                     at: CGPoint(x: 48, y: 72),
                     withAttributes: [
                         .font: UIFont.systemFont(ofSize: 32, weight: .semibold),
-                        .foregroundColor: UIColor.label
+                        .foregroundColor: UIColor.label,
                     ]
                 )
             }

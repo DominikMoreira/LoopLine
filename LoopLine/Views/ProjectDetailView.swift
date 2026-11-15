@@ -61,30 +61,44 @@ struct ProjectDetailView: View {
                 notePendingDeletion = nil
             }
         } message: {
-            Text("This will permanently delete this note. This cannot be undone.")
+            Text(
+                "This will permanently delete this note. This cannot be undone."
+            )
         }
-        .alert("Delete Project?", isPresented: $viewModel.isShowingDeleteConfirmation) {
+        .alert(
+            "Delete Project?",
+            isPresented: $viewModel.isShowingDeleteConfirmation
+        ) {
             Button("Delete Project", role: .destructive) {
                 viewModel.deleteProject(project, in: modelContext)
                 dismiss()
             }
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete \(project.name) and its notes. This cannot be undone.")
+            Text(
+                "This will permanently delete \(project.name) and its notes. This cannot be undone."
+            )
         }
         .sheet(isPresented: $viewModel.isShowingEditProject) {
             EditProjectView(project: project)
         }
         .sheet(isPresented: $viewModel.isShowingTextImport) {
-            PastedTextImportView(initialText: project.sourceText ?? "") { text in
-                viewModel.importPastedText(text, into: project, in: modelContext)
+            PastedTextImportView(initialText: project.sourceText ?? "") {
+                text in
+                viewModel.importPastedText(
+                    text,
+                    into: project,
+                    in: modelContext
+                )
             }
         }
     }
 
     private var mediaHeader: some View {
         Group {
-            if project.sourceType == .pdf, let sourceFilePath = project.sourceFilePath {
+            if project.sourceType == .pdf,
+                let sourceFilePath = project.sourceFilePath
+            {
                 if ImportedPDFStorage.fileURL(for: project) != nil {
                     NavigationLink {
                         ProjectReadingView(project: project)
@@ -98,7 +112,9 @@ struct ProjectDetailView: View {
                 } else {
                     pdfPreview(storedReference: sourceFilePath)
                 }
-            } else if project.sourceType == .image, let sourceFilePath = project.sourceFilePath {
+            } else if project.sourceType == .image,
+                let sourceFilePath = project.sourceFilePath
+            {
                 if ImportedImageStorage.fileURL(for: sourceFilePath) != nil {
                     NavigationLink {
                         ProjectReadingView(project: project)
@@ -116,8 +132,11 @@ struct ProjectDetailView: View {
                 NavigationLink {
                     ProjectReadingView(project: project)
                 } label: {
-                    LoopLineSourcePlaceholder(sourceType: project.sourceType, label: "Cover Image")
-                        .frame(height: 190)
+                    LoopLineSourcePlaceholder(
+                        sourceType: project.sourceType,
+                        label: "Cover Image"
+                    )
+                    .frame(height: 190)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Open text instructions")
@@ -127,62 +146,103 @@ struct ProjectDetailView: View {
 
     private func pdfPreview(storedReference: String) -> some View {
         StoredPDFPreview(storedReference: storedReference, height: 190)
-            .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+            )
             .overlay {
-                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
             }
     }
 
     private func imagePreview(storedReference: String) -> some View {
         StoredImagePreview(storedReference: storedReference, height: 190)
-            .clipShape(RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+            )
             .overlay {
-                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
             }
     }
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(project.name)
-                .font(.largeTitle.weight(.bold))
-                .foregroundStyle(LoopLineTheme.primaryText)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(project.name)
+                    .font(.largeTitle.weight(.bold))
+                    .foregroundStyle(LoopLineTheme.primaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .layoutPriority(1)
 
-            HStack(spacing: 8) {
+                Spacer(minLength: 8)
+
                 LoopLineSourceBadge(sourceType: project.sourceType)
-
-                if let subtitle = project.subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(LoopLineTheme.secondaryText)
-                        .lineLimit(2)
-                } else {
-                    Text(viewModel.sourceMetaText(for: project))
-                        .font(.subheadline)
-                        .foregroundStyle(LoopLineTheme.secondaryText)
-                        .lineLimit(1)
-                }
             }
+
+            if project.subtitleSize?.isEmpty ?? true {
+                Text(viewModel.sourceMetaText(for: project))
+                    .font(.subheadline)
+                    .foregroundStyle(LoopLineTheme.secondaryText)
+                    .lineLimit(1)
+            }
+
+            ProjectMaterialDetails(
+                size: project.subtitleSize,
+                needleSize: project.subtitleNeedleSize,
+                yarnType: project.subtitleYarnType
+            )
         }
     }
 
     private var statsRow: some View {
         HStack(spacing: 0) {
-            LoopLineStatTile(value: String(project.currentRow), label: "Current Row")
+            LoopLineStatTile(
+                value: String(project.currentRow),
+                label: "Current Row"
+            )
             Divider()
-            LoopLineStatTile(value: viewModel.repeatDisplayText(for: project), label: "Repeat")
+            LoopLineStatTile(
+                value: viewModel.repeatDisplayText(for: project),
+                label: "Repeat"
+            )
             Divider()
-            LoopLineStatTile(value: String(project.currentStitch), label: "Stitches")
+            LoopLineStatTile(
+                value: String(project.currentStitch),
+                label: "Stitches"
+            )
             Divider()
-            LoopLineStatTile(value: viewModel.progressText(for: project), label: "Progress")
+            LoopLineStatTile(
+                value: viewModel.progressText(for: project),
+                label: "Progress"
+            )
         }
         .frame(maxWidth: .infinity)
-        .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+        .background(
+            LoopLineTheme.surface,
+            in: RoundedRectangle(
+                cornerRadius: LoopLineTheme.cornerRadius,
+                style: .continuous
+            )
+        )
         .overlay {
-            RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+            RoundedRectangle(
+                cornerRadius: LoopLineTheme.cornerRadius,
+                style: .continuous
+            )
+            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
         }
         .shadow(color: LoopLineTheme.shadow, radius: 14, x: 0, y: 8)
     }
@@ -208,17 +268,28 @@ struct ProjectDetailView: View {
 
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            LoopLineSectionHeader(title: "Notes & Reminders", actionTitle: "+ Add") {
+            LoopLineSectionHeader(
+                title: "Notes & Reminders",
+                actionTitle: "+ Add"
+            ) {
                 viewModel.isShowingAddNote = true
             }
 
             if project.notes.isEmpty {
-                Text("No notes yet. Add a reminder for a specific row or a general note.")
-                    .font(.body)
-                    .foregroundStyle(LoopLineTheme.secondaryText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(18)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+                Text(
+                    "No notes yet. Add a reminder for a specific row or a general note."
+                )
+                .font(.body)
+                .foregroundStyle(LoopLineTheme.secondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(18)
+                .background(
+                    LoopLineTheme.surface,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.cornerRadius,
+                        style: .continuous
+                    )
+                )
             } else {
                 VStack(spacing: 0) {
                     ForEach(project.notes) { note in
@@ -235,10 +306,19 @@ struct ProjectDetailView: View {
                     }
                 }
                 .padding(.horizontal, 14)
-                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+                .background(
+                    LoopLineTheme.surface,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.cornerRadius,
+                        style: .continuous
+                    )
+                )
                 .overlay {
-                    RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.cornerRadius,
+                        style: .continuous
+                    )
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
             }
         }
@@ -266,8 +346,12 @@ struct ProjectDetailView: View {
                     detail: viewModel.rowDetailText(for: project),
                     canDecrease: project.currentRow > 0,
                     canIncrease: viewModel.canIncreaseRow(for: project),
-                    decreaseAction: { viewModel.decrementRow(for: project, in: modelContext) },
-                    increaseAction: { viewModel.incrementRow(for: project, in: modelContext) }
+                    decreaseAction: {
+                        viewModel.decrementRow(for: project, in: modelContext)
+                    },
+                    increaseAction: {
+                        viewModel.incrementRow(for: project, in: modelContext)
+                    }
                 )
 
                 Divider()
@@ -278,8 +362,18 @@ struct ProjectDetailView: View {
                     detail: nil,
                     canDecrease: project.repeatCurrent > 0,
                     canIncrease: viewModel.canIncreaseRepeat(for: project),
-                    decreaseAction: { viewModel.decrementRepeat(for: project, in: modelContext) },
-                    increaseAction: { viewModel.incrementRepeat(for: project, in: modelContext) }
+                    decreaseAction: {
+                        viewModel.decrementRepeat(
+                            for: project,
+                            in: modelContext
+                        )
+                    },
+                    increaseAction: {
+                        viewModel.incrementRepeat(
+                            for: project,
+                            in: modelContext
+                        )
+                    }
                 )
 
                 Divider()
@@ -290,15 +384,34 @@ struct ProjectDetailView: View {
                     detail: nil,
                     canDecrease: project.currentStitch > 0,
                     canIncrease: true,
-                    decreaseAction: { viewModel.decrementStitch(for: project, in: modelContext) },
-                    increaseAction: { viewModel.incrementStitch(for: project, in: modelContext) }
+                    decreaseAction: {
+                        viewModel.decrementStitch(
+                            for: project,
+                            in: modelContext
+                        )
+                    },
+                    increaseAction: {
+                        viewModel.incrementStitch(
+                            for: project,
+                            in: modelContext
+                        )
+                    }
                 )
             }
             .padding(.horizontal, 16)
-            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .background(
+                LoopLineTheme.surface,
+                in: RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+            )
             .overlay {
-                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
             }
         }
     }
@@ -317,6 +430,38 @@ struct ProjectDetailView: View {
                     .labelStyle(.titleAndIcon)
             }
             .buttonStyle(LoopLineDangerButtonStyle())
+        }
+    }
+}
+
+private struct ProjectMaterialDetails: View {
+    let size: String?
+    let needleSize: String?
+    let yarnType: String?
+
+    var body: some View {
+        if size != nil || needleSize != nil || yarnType != nil {
+            VStack(alignment: .leading, spacing: 4) {
+                if let size, !size.isEmpty {
+                    LabeledContent("Size") {
+                        Text(size)
+                    }
+                }
+
+                if let needleSize, !needleSize.isEmpty {
+                    LabeledContent("Needle Size") {
+                        Text(needleSize)
+                    }
+                }
+
+                if let yarnType, !yarnType.isEmpty {
+                    LabeledContent("Yarn Type") {
+                        Text(yarnType)
+                    }
+                }
+            }
+            .font(.subheadline)
+            .foregroundStyle(LoopLineTheme.secondaryText)
         }
     }
 }
@@ -360,10 +505,19 @@ struct PastedTextImportView: View {
                             .accessibilityHidden(true)
                     }
                 }
-                .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                .background(
+                    LoopLineTheme.surface,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
                 .overlay {
-                    RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                 }
 
                 Text("Each non-empty line becomes a tracked row.")
@@ -415,21 +569,80 @@ private struct EditProjectView: View {
                     .font(.title3)
                     .textFieldStyle(.plain)
                     .padding(16)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                    .background(
+                        LoopLineTheme.surface,
+                        in: RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                    )
                     .overlay {
-                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                        RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                     }
 
-                LoopLineFieldLabel(text: "Subtitle")
-                TextField("Subtitle", text: $viewModel.draft.subtitle)
+                LoopLineFieldLabel(text: "Size")
+                TextField("M", text: $viewModel.draft.subtitleSize)
                     .textFieldStyle(.plain)
                     .padding(16)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                    .background(
+                        LoopLineTheme.surface,
+                        in: RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                    )
                     .overlay {
-                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                        RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                     }
+
+                LoopLineFieldLabel(text: "Needle Size")
+                TextField("3mm", text: $viewModel.draft.subtitleNeedleSize)
+                    .textFieldStyle(.plain)
+                    .padding(16)
+                    .background(
+                        LoopLineTheme.surface,
+                        in: RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                    )
+                    .overlay {
+                        RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                    }
+
+                LoopLineFieldLabel(text: "Yarn Type")
+                TextField(
+                    "Mohair & Cotton",
+                    text: $viewModel.draft.subtitleYarnType
+                )
+                .textFieldStyle(.plain)
+                .padding(16)
+                .background(
+                    LoopLineTheme.surface,
+                    in: RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                )
+                .overlay {
+                    RoundedRectangle(
+                        cornerRadius: LoopLineTheme.compactCornerRadius,
+                        style: .continuous
+                    )
+                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                }
 
                 Spacer()
             }
@@ -481,7 +694,9 @@ struct AddNoteView: View {
     private let primaryButtonTitle: LocalizedStringResource
 
     init(currentRow: Int, onSave: @escaping (NoteDraft) -> Void) {
-        _viewModel = State(initialValue: AddNoteViewModel(currentRow: currentRow))
+        _viewModel = State(
+            initialValue: AddNoteViewModel(currentRow: currentRow)
+        )
         self.onSave = onSave
         navigationTitle = "Add Note"
         primaryButtonTitle = "Save Note"
@@ -507,16 +722,29 @@ struct AddNoteView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         LoopLineFieldLabel(text: "Note")
-                        TextField("Start decreases at the armhole.", text: $viewModel.draft.text, axis: .vertical)
-                            .lineLimit(4...7)
-                            .textFieldStyle(.plain)
-                            .padding(16)
-                            .frame(minHeight: 116, alignment: .topLeading)
-                            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
-                            }
+                        TextField(
+                            "Start decreases at the armhole.",
+                            text: $viewModel.draft.text,
+                            axis: .vertical
+                        )
+                        .lineLimit(4...7)
+                        .textFieldStyle(.plain)
+                        .padding(16)
+                        .frame(minHeight: 116, alignment: .topLeading)
+                        .background(
+                            LoopLineTheme.surface,
+                            in: RoundedRectangle(
+                                cornerRadius: LoopLineTheme.cornerRadius,
+                                style: .continuous
+                            )
+                        )
+                        .overlay {
+                            RoundedRectangle(
+                                cornerRadius: LoopLineTheme.cornerRadius,
+                                style: .continuous
+                            )
+                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                        }
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -530,9 +758,11 @@ struct AddNoteView: View {
                         .font(.headline)
                         .tint(LoopLineTheme.accent)
 
-                        Text("Reminder will appear when you reach that row in reading mode.")
-                            .font(.caption)
-                            .foregroundStyle(LoopLineTheme.secondaryText)
+                        Text(
+                            "Reminder will appear when you reach that row in reading mode."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(LoopLineTheme.secondaryText)
                     }
 
                     if viewModel.attachesToRow {
@@ -588,10 +818,19 @@ struct AddNoteView: View {
                     .textFieldStyle(.plain)
                     .font(.title3.monospacedDigit())
                     .padding(16)
-                    .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous))
+                    .background(
+                        LoopLineTheme.surface,
+                        in: RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                    )
                     .overlay {
-                        RoundedRectangle(cornerRadius: LoopLineTheme.compactCornerRadius, style: .continuous)
-                            .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                        RoundedRectangle(
+                            cornerRadius: LoopLineTheme.compactCornerRadius,
+                            style: .continuous
+                        )
+                        .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
                     }
 
                 VStack(spacing: 10) {
@@ -641,16 +880,29 @@ struct AddNoteView: View {
                         }
                     }
                     .font(.body)
-                    .foregroundStyle(viewModel.draft.trimmedText.isEmpty ? LoopLineTheme.secondaryText : LoopLineTheme.primaryText)
+                    .foregroundStyle(
+                        viewModel.draft.trimmedText.isEmpty
+                            ? LoopLineTheme.secondaryText
+                            : LoopLineTheme.primaryText
+                    )
                 }
 
                 Spacer()
             }
             .padding(16)
-            .background(LoopLineTheme.surface, in: RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous))
+            .background(
+                LoopLineTheme.surface,
+                in: RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+            )
             .overlay {
-                RoundedRectangle(cornerRadius: LoopLineTheme.cornerRadius, style: .continuous)
-                    .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
+                RoundedRectangle(
+                    cornerRadius: LoopLineTheme.cornerRadius,
+                    style: .continuous
+                )
+                .stroke(LoopLineTheme.subtleStroke, lineWidth: 1)
             }
         }
     }
@@ -667,7 +919,10 @@ private struct NoteRow: View {
                 .font(.caption.weight(.bold).monospacedDigit())
                 .foregroundStyle(LoopLineTheme.accent)
                 .frame(width: 50, height: 42)
-                .background(LoopLineTheme.accentSoft, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(
+                    LoopLineTheme.accentSoft,
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
 
             Text(note.text)
                 .font(.body)
@@ -678,7 +933,12 @@ private struct NoteRow: View {
 
             Menu {
                 Button("Edit", systemImage: "pencil", action: editAction)
-                Button("Delete", systemImage: "trash", role: .destructive, action: deleteAction)
+                Button(
+                    "Delete",
+                    systemImage: "trash",
+                    role: .destructive,
+                    action: deleteAction
+                )
             } label: {
                 Image(systemName: "ellipsis")
                     .frame(width: 44, height: 44)
@@ -748,18 +1008,20 @@ private struct CounterControlRow: View {
 
 #Preview {
     NavigationStack {
-        ProjectDetailView(project: Project(
-            name: "Sample Scarf",
-            subtitle: "Beginner garter stitch",
-            sourceType: .text,
-            currentRow: 2,
-            repeatCurrent: 0,
-            repeatTotal: 4,
-            rows: ["Cast on", "Knit", "Bind off"],
-            notes: [
-                ProjectNote(text: "Check tension", rowNumber: 2)
-            ]
-        ))
+        ProjectDetailView(
+            project: Project(
+                name: "Sample Scarf",
+                subtitleSize: "Beginner garter stitch",
+                sourceType: .text,
+                currentRow: 2,
+                repeatCurrent: 0,
+                repeatTotal: 4,
+                rows: ["Cast on", "Knit", "Bind off"],
+                notes: [
+                    ProjectNote(text: "Check tension", rowNumber: 2)
+                ]
+            )
+        )
     }
     .modelContainer(PreviewModelContainer.make())
 }
@@ -768,7 +1030,7 @@ private struct CounterControlRow: View {
     let container = PreviewModelContainer.make()
     let project = Project(
         name: "Sample Scarf",
-        subtitle: "Beginner garter stitch",
+        subtitleSize: "Beginner garter stitch",
         sourceType: .text
     )
     container.mainContext.insert(project)
@@ -779,7 +1041,8 @@ private struct CounterControlRow: View {
 
 #Preview("Import Text") {
     PastedTextImportView(
-        initialText: "Cast on 24 stitches.\nKnit every row until piece measures 48 inches.\nBind off loosely.",
+        initialText:
+            "Cast on 24 stitches.\nKnit every row until piece measures 48 inches.\nBind off loosely.",
         onImport: { _ in }
     )
 }

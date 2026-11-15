@@ -5,7 +5,9 @@ import SwiftUI
 
 struct NewProjectDraft {
     var name = ""
-    var subtitle = ""
+    var subtitleSize = ""
+    var subtitleNeedleSize = ""
+    var subtitleYarnType = ""
     var sourceType: ImportSource?
     var sourceText = ""
     var sourceFilePath: String?
@@ -17,8 +19,16 @@ struct NewProjectDraft {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    var trimmedSubtitle: String {
-        subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    var trimmedSubtitleSize: String {
+        subtitleSize.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedSubtitleNeedleSize: String {
+        subtitleNeedleSize.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var trimmedSubtitleYarnType: String {
+        subtitleYarnType.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var trimmedSourceText: String {
@@ -140,11 +150,18 @@ final class CreateProjectViewModel {
 
         do {
             let sourceURL = try result.get()
-            let localURL = try ImportedPDFStorage.copyIntoStorage(from: sourceURL)
-            adoptPDF(path: localURL.lastPathComponent, fileName: sourceURL.lastPathComponent)
+            let localURL = try ImportedPDFStorage.copyIntoStorage(
+                from: sourceURL
+            )
+            adoptPDF(
+                path: localURL.lastPathComponent,
+                fileName: sourceURL.lastPathComponent
+            )
             errorMessage = nil
         } catch {
-            errorMessage = String(localized: "Could not import the selected PDF.")
+            errorMessage = String(
+                localized: "Could not import the selected PDF."
+            )
         }
     }
 
@@ -167,7 +184,11 @@ final class CreateProjectViewModel {
             var localReferences: [String] = []
             do {
                 for item in items {
-                    guard let data = try await item.loadTransferable(type: Data.self) else {
+                    guard
+                        let data = try await item.loadTransferable(
+                            type: Data.self
+                        )
+                    else {
                         throw CocoaError(.fileReadCorruptFile)
                     }
                     try Task.checkCancellation()
@@ -180,8 +201,9 @@ final class CreateProjectViewModel {
 
                 await MainActor.run {
                     guard let self,
-                          self.isDraftActive,
-                          self.currentImageImportID == importID else {
+                        self.isDraftActive,
+                        self.currentImageImportID == importID
+                    else {
                         return
                     }
 
@@ -191,19 +213,27 @@ final class CreateProjectViewModel {
                 }
 
                 if !didAdoptImages {
-                    ImportedImageStorage.delete(storedReferences: localReferences)
+                    ImportedImageStorage.delete(
+                        storedReferences: localReferences
+                    )
                 }
             } catch is CancellationError {
                 ImportedImageStorage.delete(storedReferences: localReferences)
                 await MainActor.run {
-                    guard let self, self.currentImageImportID == importID else { return }
+                    guard let self, self.currentImageImportID == importID else {
+                        return
+                    }
                     self.finishImageImport()
                 }
             } catch {
                 ImportedImageStorage.delete(storedReferences: localReferences)
                 await MainActor.run {
-                    guard let self, self.isDraftActive, self.currentImageImportID == importID else { return }
-                    self.errorMessage = String(localized: "Could not import the selected photos.")
+                    guard let self, self.isDraftActive,
+                        self.currentImageImportID == importID
+                    else { return }
+                    self.errorMessage = String(
+                        localized: "Could not import the selected photos."
+                    )
                     self.finishImageImport()
                 }
             }
@@ -231,7 +261,9 @@ final class CreateProjectViewModel {
             try create(draft)
             didCreateProject = true
         } catch {
-            errorMessage = String(localized: "Could not create the project. Please try again.")
+            errorMessage = String(
+                localized: "Could not create the project. Please try again."
+            )
         }
     }
 
